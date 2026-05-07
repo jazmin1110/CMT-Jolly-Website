@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Jolly - Premium quality plain t-shirts for wholesale and bulk orders in the Philippines. High volume orders, quality materials, fast turnaround.">
+  <title>Jolly - Premium T-Shirts Philippines</title>
+  
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ========================================================================
+       NAVIGATION
+       ======================================================================== -->
+  <nav class="navbar" id="navbar">
+    <div class="container nav-container">
+      <a href="#hero" class="nav-logo">
+        <img src="" alt="Jolly" id="nav-logo-img">
+        <span id="nav-brand-name">Jolly</span>
+      </a>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <ul class="nav-menu" id="nav-menu">
+        <li><a href="#products" class="nav-link">Products</a></li>
+        <li><a href="#custom" class="nav-link">Custom Designs</a></li>
+        <li><a href="#about" class="nav-link">About</a></li>
+        <li><a href="#contact" class="nav-link nav-cta">Contact Us</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ========================================================================
+       HERO SECTION
+       ======================================================================== -->
+  <section class="hero" id="hero">
+    <div class="container hero-container">
+      <div class="hero-content">
+        <img src="" alt="Jolly Logo" class="hero-logo" id="hero-logo">
+        <h1 class="hero-tagline" id="hero-tagline">[TAGLINE HERE]</h1>
+        <p class="hero-description" id="hero-description">
+          [Short brand description]
+        </p>
+        <div class="hero-buttons">
+          <a href="#products" class="btn btn-primary">View Products</a>
+          <a href="#contact" class="btn btn-outline">Contact Us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       PRODUCTS SECTION
+       ======================================================================== -->
+  <section class="products" id="products">
+    <div class="container">
+      <h2 class="section-title">Our Products</h2>
+      <p class="section-subtitle">Quality t-shirts for wholesale and bulk orders</p>
+      
+      <div class="products-grid" id="products-grid">
+        <!-- Products will be rendered here by JavaScript -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       CUSTOM DESIGNS SECTION
+       ======================================================================== -->
+  <section class="custom" id="custom">
+    <div class="container">
+      <h2 class="section-title" id="custom-title">Custom Prints & Embroidery</h2>
+      <p class="section-description" id="custom-description">
+        [Description of custom design services]
+      </p>
+      
+      <div class="services-list" id="services-list">
+        <!-- Services will be rendered here by JavaScript -->
+      </div>
+      
+      <div class="samples-grid" id="samples-grid">
+        <!-- Sample images will be rendered here by JavaScript -->
+      </div>
+      
+      <div class="custom-cta">
+        <a href="#contact" class="btn btn-primary">Request a Custom Design</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       ABOUT SECTION
+       ======================================================================== -->
+  <section class="about" id="about">
+    <div class="container">
+      <h2 class="section-title" id="about-title">Why Choose Jolly?</h2>
+      <p class="section-description" id="about-description">
+        [About your brand]
+      </p>
+      
+      <div class="highlights-grid" id="highlights-grid">
+        <!-- Highlights will be rendered here by JavaScript -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       CONTACT SECTION
+       ======================================================================== -->
+  <section class="contact" id="contact">
+    <div class="container">
+      <h2 class="section-title">Get in Touch</h2>
+      <p class="section-subtitle">Ready to order? Have questions? We'd love to hear from you.</p>
+      
+      <div class="contact-grid">
+        <!-- Contact Info -->
+        <div class="contact-info">
+          <div class="contact-item">
+            <div class="contact-icon">📞</div>
+            <div class="contact-details">
+              <h4>Phone</h4>
+              <p id="contact-phone">[Phone number]</p>
+            </div>
+          </div>
+          
+          <div class="contact-item">
+            <div class="contact-icon">✉️</div>
+            <div class="contact-details">
+              <h4>Email</h4>
+              <p id="contact-email">[Email address]</p>
+            </div>
+          </div>
+          
+          <div class="contact-item">
+            <div class="contact-icon">📍</div>
+            <div class="contact-details">
+              <h4>Address</h4>
+              <p id="contact-address">[Business address]</p>
+            </div>
+          </div>
+          
+          <div class="contact-item">
+            <div class="contact-icon">🕐</div>
+            <div class="contact-details">
+              <h4>Business Hours</h4>
+              <p id="contact-hours">[Business hours]</p>
+            </div>
+          </div>
+          
+          <div class="social-links">
+            <a href="#" id="social-facebook" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a href="#" id="social-instagram" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+            </a>
+          </div>
+        </div>
+        
+        <!-- Contact Form -->
+        <div class="contact-form-wrapper">
+          <form class="contact-form" id="contact-form" action="https://formspree.io/f/[YOUR-FORM-ID]" method="POST">
+            <div class="form-group">
+              <label for="name">Your Name</label>
+              <input type="text" id="name" name="name" required placeholder="Juan Dela Cruz">
+            </div>
+            
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input type="email" id="email" name="email" required placeholder="juan@example.com">
+            </div>
+            
+            <div class="form-group">
+              <label for="phone">Phone Number (Optional)</label>
+              <input type="tel" id="phone" name="phone" placeholder="+63 917 123 4567">
+            </div>
+            
+            <div class="form-group">
+              <label for="message">Your Message</label>
+              <textarea id="message" name="message" rows="5" required placeholder="Tell us about your order requirements..."></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-full">Send Message</button>
+          </form>
+          
+          <p class="form-note">
+            Or email us directly at <a href="#" id="email-link">[email]</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       FOOTER
+       ======================================================================== -->
+  <footer class="footer" id="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <img src="" alt="Jolly" class="footer-logo" id="footer-logo">
+          <p class="footer-tagline" id="footer-tagline">[Tagline]</p>
+        </div>
+        
+        <nav class="footer-nav">
+          <a href="#products">Products</a>
+          <a href="#custom">Custom Designs</a>
+          <a href="#about">About</a>
+          <a href="#contact">Contact</a>
+        </nav>
+        
+        <div class="footer-social">
+          <a href="#" id="footer-facebook" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          </a>
+          <a href="#" id="footer-instagram" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+          </a>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; <span id="current-year">2026</span> <span id="copyright-text">Jolly Philippines. All rights reserved.</span></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="content.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
