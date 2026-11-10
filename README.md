@@ -27,11 +27,25 @@ All editable content is in one file: **`content.js`**
 
 | Section | What to Edit |
 |---------|--------------|
-| **Brand** | Company name, tagline, description, logo |
-| **Contact** | Phone, email, address, business hours, social links |
-| **Products** | Names, descriptions, prices, sizes, images |
-| **Custom Services** | Title, description, list of services |
-| **About** | Title, description, feature highlights |
+| **Brand** | Name, the big first-screen line, the sentence under it, logo |
+| **Contact** | Phone, email, address, hours, social links, Formspree form ID |
+| **Products** | Names, descriptions, sizes, measurements, prices, minimum order, terms |
+| **Colors** | The shirt colours offered in the builder (name + colour code) |
+| **Custom Services** | Print/embroidery methods and the print placements |
+| **Quantities** | The order sizes offered in the builder's last step |
+| **About** | "Why Jolly" sentence and the four big figures |
+
+Anything still written like `[THIS]` is hidden on the site until you fill it in.
+
+### How the site works
+
+The first screen is an **order builder**: visitors drag (or tap) choices from the turning
+table onto the shirt, and the order slip on the right adds up the price per piece, the
+estimated total and the 30% downpayment. "Send this order" copies the order into the
+inquiry form at the bottom.
+
+The shirts are drawn in code (`shirt.js`), so every colour in `content.js` works without
+photos. Real product photos can replace the drawings later.
 
 ---
 
@@ -107,6 +121,8 @@ CMT-Jolly-Website/
 ├── index.html      # Main website page (don't edit unless you know HTML)
 ├── styles.css      # Styling (don't edit unless you know CSS)
 ├── script.js       # Functionality (don't edit unless you know JavaScript)
+├── shirt.js        # Draws the shirts and print samples
+├── assets/         # Credited photos (cotton, thread, Manila street)
 ├── content.js      # ✅ EDIT THIS FILE for all content changes
 ├── images/         # ✅ PUT YOUR IMAGES HERE
 │   ├── jolly-logo.png

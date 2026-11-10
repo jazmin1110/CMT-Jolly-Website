@@ -2,112 +2,71 @@
  * ============================================================================
  * JOLLY WEBSITE - EDITABLE CONTENT FILE
  * ============================================================================
- * 
- * HOW TO EDIT THIS FILE:
- * ----------------------
- * This file contains ALL the text, prices, and content shown on the website.
- * You can edit anything below WITHOUT touching any other files.
- * 
- * IMPORTANT RULES:
- * 1. Keep all quotes (" ") around text - don't delete them
- * 2. Keep all commas (,) at the end of lines - don't delete them
- * 3. For prices, use numbers only (no peso sign) - e.g., 100 not ₱100
- * 4. Save the file after editing, then refresh the website to see changes
- * 
- * FOR IMAGES:
- * - Put your images in the /images/ folder
- * - Use the exact filename in this file (e.g., "product-1.jpg")
- * - Recommended image sizes: Products = 600x600px, Logo = 200x60px
- * 
+ *
+ * This file holds ALL the words, prices and choices shown on the website.
+ * Edit anything below without touching the other files.
+ *
+ * RULES:
+ * 1. Keep the quotes (" ") around text.
+ * 2. Keep the commas (,) at the end of lines.
+ * 3. Prices are numbers only, no peso sign: 100, not ₱100.
+ * 4. Save, then refresh the browser to see the change.
+ *
+ * Anything still written like "[THIS]" is a placeholder. The site hides
+ * placeholders automatically, so it is safe to leave them until you have
+ * the real details.
  * ============================================================================
  */
 
 const SITE_CONTENT = {
 
   // ==========================================================================
-  // BRAND INFORMATION
+  // BRAND
   // ==========================================================================
-  
   brand: {
-    // ← EDIT YOUR BRAND NAME HERE
     name: "Jolly",
-    
-    // ← EDIT YOUR TAGLINE HERE (shown in hero section)
-    tagline: "[TAGLINE HERE]",
-    
-    // ← EDIT YOUR BRAND DESCRIPTION HERE (shown in hero section)
-    description: "[Short brand description - Tell customers what makes Jolly special. Example: Premium quality plain t-shirts for wholesale and bulk orders in the Philippines.]",
-    
-    // ← EDIT YOUR LOGO FILENAME HERE (put the logo file in /images/ folder)
-    // Recommended size: 200x60 pixels, PNG format with transparent background
-    logo: "images/jolly-logo.png",
+    // Big line on the first screen (keep it short, about 30 letters)
+    tagline: "Build your shirt order",
+    // One sentence under it
+    description:
+      "Plain 100% cotton round-neck shirts from the Philippines, priced per piece and made in bulk. Pick the colour, size, print and quantity, and the order slip adds it up for you.",
+    // Optional logo file in /images/ (leave "" to use the word "Jolly")
+    logo: "",
   },
 
   // ==========================================================================
-  // CONTACT INFORMATION
+  // CONTACT
   // ==========================================================================
-  
   contact: {
-    // ← EDIT YOUR PHONE NUMBER HERE
     phone: "[YOUR PHONE NUMBER]",
-    
-    // ← EDIT YOUR EMAIL ADDRESS HERE
     email: "[YOUR EMAIL ADDRESS]",
-    
-    // ← EDIT YOUR BUSINESS ADDRESS HERE
     address: "[YOUR BUSINESS ADDRESS]",
-    
-    // ← EDIT YOUR BUSINESS HOURS HERE
-    businessHours: "[YOUR BUSINESS HOURS - e.g., Mon-Fri 8AM-5PM, Sat 8AM-12PM]",
-    
-    // ← EDIT YOUR SOCIAL MEDIA LINKS HERE (put the full URL)
+    businessHours: "[YOUR BUSINESS HOURS]",
     facebook: "https://facebook.com/[YOUR-PAGE]",
     instagram: "https://instagram.com/[YOUR-HANDLE]",
+    // Get a free form ID at formspree.io, then paste it here (e.g. "xabcdefg")
+    formspreeId: "",
   },
 
   // ==========================================================================
-  // PRODUCTS CATALOGUE
+  // PRODUCTS
   // ==========================================================================
-  // 
-  // HOW TO ADD A NEW PRODUCT:
-  // 1. Copy everything between { and }, including the curly braces
-  // 2. Paste it after the last product (before the closing bracket ])
-  // 3. Add a comma after the previous product's closing }
-  // 4. Edit the new product's details
-  //
-  // HOW TO ADD A SIZE TO A PRODUCT:
-  // 1. In the "sizes" section, copy one line like: { size: "S", width: 41, length: 26, price: 172 },
-  // 2. Paste it where you want in the list
-  // 3. Edit the values
-  //
-  // ==========================================================================
-  
+  // Only products with isActive: true AND at least one size can be ordered.
+  // The others show as "coming soon" in the builder and the catalogue.
   products: [
-    // --------------------------------------------------------------------------
-    // PRODUCT 1: 100% Pure Cotton Round Neck T-Shirt
-    // --------------------------------------------------------------------------
     {
-      // ← EDIT PRODUCT NAME HERE
+      id: "round-neck",
       name: "100% Pure Cotton Round Neck T-Shirt",
-      
-      // ← EDIT PRODUCT DESCRIPTION HERE
-      description: "Complete with front & back print, woven tag on L-H sleeve, silk size tag.",
-      
-      // ← EDIT PRODUCT IMAGE FILENAME HERE (put image in /images/ folder)
-      // Recommended size: 600x600 pixels
-      image: "images/product-1.jpg",
-      
-      // ← EDIT MINIMUM ORDER QUANTITY HERE
-      minimumOrder: "200,000 pcs",
-      
-      // ← EDIT PAYMENT TERMS HERE
-      paymentTerms: "30% downpayment, full payment upon delivery. Prices subject to change without prior notice.",
-      
-      // ← EDIT PRICE EFFECTIVITY DATE HERE
+      shortName: "Round neck",
+      description:
+        "Complete with front & back print, woven tag on L-H sleeve, silk size tag.",
+      // The shirt drawing to use: "tee", "vneck" or "polo"
+      shape: "tee",
+      minimumOrder: 200000, // pieces (number only)
+      paymentTerms:
+        "30% downpayment, full payment upon delivery. Prices subject to change without prior notice.",
       effectivityDate: "03/20/2026",
-      
-      // ← EDIT SIZES AND PRICES BELOW
-      // Format: { size: "SIZE", width: WIDTH_IN_INCHES, length: LENGTH_IN_INCHES, price: PRICE_IN_PESOS }
+      // { size, width (inches), length (inches), price (pesos per piece) }
       sizes: [
         { size: "4",   width: 24, length: 17,   price: 100 },
         { size: "6",   width: 28, length: 18,   price: 105 },
@@ -121,101 +80,114 @@ const SITE_CONTENT = {
         { size: "XS",  width: 40, length: 25.5, price: 165 },
         { size: "S",   width: 41, length: 26,   price: 172 },
         { size: "M",   width: 42, length: 27,   price: 180 },
-        { size: "L",   width: 44, length: 28,   price: 199 },
+        { size: "L",   width: 44, length: 28,   price: 199 }, // ← check: L is priced higher than XL
         { size: "XL",  width: 46, length: 29,   price: 195 },
         { size: "2XL", width: 48, length: 30,   price: 200 },
       ],
-      
-      // Set to true to show this product, false to hide it
       isActive: true,
     },
-    
-    // --------------------------------------------------------------------------
-    // PRODUCT 2: Placeholder - Edit or replace with your second product
-    // --------------------------------------------------------------------------
     {
-      name: "Coming Soon",
-      description: "New product coming soon. Check back for updates!",
-      image: "images/product-2.jpg",
-      minimumOrder: "TBA",
-      paymentTerms: "TBA",
+      id: "v-neck",
+      name: "V-Neck T-Shirt",
+      shortName: "V-neck",
+      description: "Coming soon.",
+      shape: "vneck",
+      minimumOrder: 0,
+      paymentTerms: "",
       effectivityDate: "",
       sizes: [],
-      isActive: true,
+      isActive: false,
     },
-    
-    // --------------------------------------------------------------------------
-    // PRODUCT 3: Placeholder - Edit or replace with your third product
-    // --------------------------------------------------------------------------
     {
-      name: "Coming Soon",
-      description: "New product coming soon. Check back for updates!",
-      image: "images/product-3.jpg",
-      minimumOrder: "TBA",
-      paymentTerms: "TBA",
+      id: "polo",
+      name: "Polo Shirt",
+      shortName: "Polo",
+      description: "Coming soon.",
+      shape: "polo",
+      minimumOrder: 0,
+      paymentTerms: "",
       effectivityDate: "",
       sizes: [],
-      isActive: true,
+      isActive: false,
     },
   ],
 
   // ==========================================================================
-  // CUSTOM DESIGN SERVICES
+  // SHIRT COLOURS (shown in the builder)
   // ==========================================================================
-  
+  // name = what customers see, hex = the colour of the drawing.
+  // ← CONFIRM this list against the colours you actually stock.
+  colors: [
+    { name: "White",        hex: "#F7F5F0" },
+    { name: "Black",        hex: "#1E1E1E" },
+    { name: "Jolly red",    hex: "#D32F2F" },
+    { name: "Navy",         hex: "#1F2A4A" },
+    { name: "Royal blue",   hex: "#2952A3" },
+    { name: "Heather grey", hex: "#A7A9AC" },
+    { name: "Sun yellow",   hex: "#F6C343" },
+    { name: "Forest green", hex: "#2F5D3A" },
+    { name: "Maroon",       hex: "#6B1E2A" },
+    { name: "Sky blue",     hex: "#8EC5E8" },
+  ],
+
+  // ==========================================================================
+  // CUSTOM PRINTS & EMBROIDERY
+  // ==========================================================================
   customServices: {
-    // ← EDIT SECTION TITLE HERE
-    title: "Custom Prints & Embroidery",
-    
-    // ← EDIT SECTION DESCRIPTION HERE
-    description: "[DESCRIPTION OF CUSTOM DESIGN SERVICES - Tell customers about your custom printing and embroidery capabilities, turnaround times, and what makes your service special.]",
-    
-    // ← EDIT LIST OF SERVICES HERE (add or remove as needed)
+    title: "Custom prints & embroidery",
+    description:
+      "Every Jolly shirt can leave the factory plain, printed or embroidered. Send us the artwork and the quantity and we will quote the decoration per piece.",
+    // note = short line under each service on the price sheet
     services: [
-      "Screen Printing",
-      "Digital Printing", 
-      "Embroidery",
-      "Heat Transfer",
-      "Sublimation Printing",
+      { name: "Screen printing",  note: "Flat colours, best for big runs" },
+      { name: "Digital printing", note: "Full colour and photo artwork" },
+      { name: "Embroidery",       note: "Stitched logos for uniforms" },
+      { name: "Heat transfer",    note: "Sharp detail, numbers and names" },
+      { name: "Sublimation",      note: "Edge-to-edge colour on light shirts" },
     ],
-    
-    // ← EDIT SAMPLE IMAGE FILENAMES HERE (put images in /images/ folder)
-    // Recommended size: 400x400 pixels each
-    sampleImages: [
-      "images/custom-sample-1.jpg",
-      "images/custom-sample-2.jpg",
-      "images/custom-sample-3.jpg",
-      "images/custom-sample-4.jpg",
+    // Where a print can go (shown in the builder)
+    placements: [
+      { id: "chest", name: "Left chest" },
+      { id: "front", name: "Full front" },
+      { id: "back",  name: "Full back" },
+      { id: "both",  name: "Front & back" },
     ],
   },
 
   // ==========================================================================
-  // ABOUT / WHY JOLLY SECTION
+  // ORDER QUANTITIES (the last step of the builder)
   // ==========================================================================
-  
+  quantities: [200000, 250000, 300000, 500000, 1000000],
+
+  // ==========================================================================
+  // WHY JOLLY
+  // ==========================================================================
   about: {
-    // ← EDIT ABOUT SECTION TITLE HERE
-    title: "Why Choose Jolly?",
-    
-    // ← EDIT ABOUT DESCRIPTION HERE
-    description: "[ABOUT YOUR BRAND - Share your story, your commitment to quality, and what makes Jolly different from other suppliers.]",
-    
-    // ← EDIT HIGHLIGHTS HERE (the 3 feature boxes)
+    title: "Why Jolly",
+    description:
+      "Jolly makes one thing well: plain cotton shirts, in the volumes real orders need.",
+    // The big figures. figure = the big text, title = what it means,
+    // description = one line under it.
     highlights: [
       {
-        icon: "📦", // You can change these emoji icons
-        title: "High Volume Orders",
-        description: "We specialize in bulk orders for businesses, schools, and organizations.",
+        figure: "200,000",
+        title: "pieces per order, minimum",
+        description: "Made for volume: schools, companies, organisations and resellers.",
       },
       {
-        icon: "✨",
-        title: "Quality Materials",
-        description: "100% pure cotton shirts that are comfortable and durable.",
+        figure: "100%",
+        title: "pure cotton",
+        description: "Every shirt, every size. Nothing blended in.",
       },
       {
-        icon: "⚡",
-        title: "Fast Turnaround",
-        description: "Efficient production process to meet your deadlines.",
+        figure: "15",
+        title: "sizes, kids 4 to adult 2XL",
+        description: "Each one measured and priced on the list above.",
+      },
+      {
+        figure: "2 tags",
+        title: "on every shirt",
+        description: "A woven Jolly tag on the left sleeve and a silk size tag at the neck.",
       },
     ],
   },
@@ -223,10 +195,7 @@ const SITE_CONTENT = {
   // ==========================================================================
   // FOOTER
   // ==========================================================================
-  
   footer: {
-    // ← EDIT COPYRIGHT TEXT HERE (year will be added automatically)
     copyrightText: "Jolly Philippines. All rights reserved.",
   },
-
 };

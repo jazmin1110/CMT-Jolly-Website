@@ -3,237 +3,278 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Jolly - Premium quality plain t-shirts for wholesale and bulk orders in the Philippines. High volume orders, quality materials, fast turnaround.">
-  <title>Jolly - Premium T-Shirts Philippines</title>
-  
-  <!-- Google Fonts - Inter -->
+  <meta name="description" content="Jolly: plain 100% cotton round-neck shirts from the Philippines, made in bulk. Build your order, see the price per piece, and send it in.">
+  <title>Jolly · Plain cotton shirts, made in bulk</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- Styles -->
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- ========================================================================
-       NAVIGATION
-       ======================================================================== -->
-  <nav class="navbar" id="navbar">
-    <div class="container nav-container">
-      <a href="#hero" class="nav-logo">
-        <img src="" alt="Jolly" id="nav-logo-img">
-        <span id="nav-brand-name">Jolly</span>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- ======================================================================
+       TOP BAR
+       ====================================================================== -->
+  <header class="bar">
+    <a class="wordmark" href="#build" aria-label="Jolly, back to the top">
+      <img alt="" id="logo-img" hidden>
+      <span id="brand-name">Jolly</span>
+    </a>
+    <nav class="bar-links" aria-label="Main">
+      <a href="#build">Build</a>
+      <a href="#prices">Price list</a>
+      <a href="#prints">Prints</a>
+      <a href="#why">Why Jolly</a>
+    </nav>
+    <a class="btn btn-ink bar-cta" href="#contact">Send an inquiry</a>
+  </header>
+
+  <main id="main">
+
+    <!-- ====================================================================
+         1. THE BUILDER (first screen)
+         Left: the turning table of choices. Middle: the shirt.
+         Right: the order slip that adds everything up.
+         ==================================================================== -->
+    <section class="builder" id="build" aria-labelledby="build-title">
+
+      <!-- Poster wall behind the builder (decoration only) -->
+      <div class="wall" aria-hidden="true">
+        <div class="poster p-red"></div>
+        <div class="poster p-yellow"></div>
+        <div class="poster p-blue"></div>
+        <div class="poster p-photo"><img src="assets/old-santa-mesa-street-jeepneys-manila-06.jpg" alt="" width="1920" height="1440"></div>
+        <div class="poster p-paper"></div>
+        <div class="poster p-red2"></div>
+        <div class="poster p-yellow2"></div>
+        <div class="poster p-blue2"></div>
+      </div>
+
+      <div class="builder-head">
+        <h1 id="build-title"><span id="hero-tagline">Build your shirt order</span></h1>
+        <p class="lead" id="hero-description">Plain 100% cotton round-neck shirts from the Philippines, priced per piece and made in bulk.</p>
+      </div>
+
+      <div class="builder-grid">
+
+        <!-- LEFT: the turning table -->
+        <div class="table-side">
+          <div class="disc-wrap" id="disc-wrap">
+            <div class="disc" id="disc" role="listbox" aria-labelledby="step-question">
+              <!-- Choices are placed here by script.js -->
+            </div>
+          </div>
+
+          <div class="disc-spin">
+            <button class="spin" id="spin-up" type="button" aria-label="Turn the table up">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7" /></svg>
+            </button>
+            <button class="spin" id="spin-down" type="button" aria-label="Turn the table down">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7" /></svg>
+            </button>
+          </div>
+
+          <div class="step-card" aria-live="polite">
+            <ol class="dots" id="dots" aria-label="Progress"></ol>
+            <h2 id="step-question">Pick your shirt</h2>
+            <p id="step-hint">Drag a choice onto the shirt, or tap it.</p>
+            <div class="step-nav">
+              <button class="btn btn-ghost" id="step-back" type="button">Back</button>
+              <button class="btn btn-ink" id="step-next" type="button">Next</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MIDDLE: the shirt -->
+        <div class="stage">
+          <div class="shirt-drop" id="shirt-drop" aria-label="Your shirt">
+            <div class="flipper" id="flipper">
+              <div class="face face-front" id="face-front"></div>
+              <div class="face face-back" id="face-back"></div>
+            </div>
+            <div class="stamp" id="stamp" aria-hidden="true"></div>
+          </div>
+          <div class="stage-foot">
+            <p class="stage-note" id="stage-note">Round neck · 100% cotton</p>
+            <button class="btn btn-paper" id="flip-btn" type="button" aria-pressed="false">See the back</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: the order slip -->
+        <aside class="slip" aria-label="Your order slip">
+          <div class="slip-head">
+            <span class="slip-brand">Jolly</span>
+            <span class="slip-kind">Order slip</span>
+          </div>
+          <dl class="slip-lines" id="slip-lines">
+            <!-- Filled by script.js -->
+          </dl>
+          <div class="slip-sum">
+            <div class="sum-row"><span>Price per shirt</span><strong id="sum-each">—</strong></div>
+            <div class="sum-row"><span>Print or embroidery</span><strong id="sum-print">—</strong></div>
+            <div class="sum-row sum-total"><span>Estimated total</span><strong id="sum-total">₱0</strong></div>
+            <div class="sum-row"><span>30% downpayment</span><strong id="sum-down">—</strong></div>
+          </div>
+          <p class="slip-fine" id="slip-fine"></p>
+          <svg class="barcode" id="barcode" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <button class="btn btn-red btn-block" id="send-order" type="button">Send this order</button>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         2. THE PRICE LIST
+         ==================================================================== -->
+    <section class="prices" id="prices" aria-labelledby="prices-title">
+      <div class="sheet">
+        <h2 id="prices-title">Price list</h2>
+        <p class="sheet-sub" id="price-sub">Round neck, 100% pure cotton. Price per piece.</p>
+
+        <div class="price-groups" id="price-groups">
+          <!-- Filled by script.js -->
+        </div>
+
+        <dl class="terms" id="terms">
+          <!-- Filled by script.js -->
+        </dl>
+      </div>
+
+      <figure class="measure" aria-labelledby="measure-cap">
+        <div class="measure-shirt" id="measure-shirt"></div>
+        <figcaption id="measure-cap">
+          <span class="measure-size" id="measure-size">M</span>
+          <span id="measure-text">42 in across the chest, 27 in long.</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <!-- ====================================================================
+         3. THE LINE-UP (catalogue of shirts and colours)
+         ==================================================================== -->
+    <section class="lineup" id="lineup" aria-labelledby="lineup-title">
+      <div class="lineup-plate">
+        <div class="plate-shirt" id="plate-shirt"></div>
+      </div>
+      <div class="lineup-text">
+        <div class="tabs" role="tablist" aria-label="Shirt styles" id="lineup-tabs"></div>
+        <div class="lineup-body">
+          <h2 id="lineup-title">The line-up</h2>
+          <p class="lineup-name" id="lineup-name"></p>
+          <p id="lineup-desc"></p>
+          <div class="swatches" id="swatches" role="radiogroup" aria-label="Colours"></div>
+          <p class="swatch-name" id="swatch-name"></p>
+        </div>
+        <div class="cells">
+          <a class="cell cell-ink" href="#build" id="lineup-build">Build this shirt</a>
+          <a class="cell cell-soft" href="#prices">See the price list</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         4. CUSTOM PRINTS & EMBROIDERY
+         ==================================================================== -->
+    <section class="prints" id="prints" aria-labelledby="prints-title">
+      <div class="prints-intro">
+        <h2 id="prints-title">Custom prints &amp; embroidery</h2>
+        <p id="prints-desc"></p>
+      </div>
+      <div class="prints-body">
+        <div class="swatch-big">
+          <div class="fabric" id="fabric"></div>
+        </div>
+        <ul class="methods" id="methods"></ul>
+      </div>
+      <figure class="prints-photo">
+        <img src="assets/wooden-spools-of-sewing-thread-in-different.jpg" width="1920" height="1440" alt="Old wooden spools of sewing thread in cream, black, grey and maroon" loading="lazy" decoding="async">
+      </figure>
+    </section>
+
+    <!-- ====================================================================
+         5. WHY JOLLY
+         ==================================================================== -->
+    <section class="why" id="why" aria-labelledby="why-title">
+      <div class="why-head">
+        <h2 id="why-title">Why Jolly</h2>
+        <p class="why-statement" id="why-desc"></p>
+      </div>
+      <div class="why-grid">
+        <figure class="why-photo why-photo-a">
+          <img src="assets/cotton-03.jpg" width="1920" height="1440" alt="An open cotton boll on the plant, ready to pick" loading="lazy" decoding="async">
+        </figure>
+        <ul class="facts" id="facts"></ul>
+        <figure class="why-photo why-photo-b">
+          <img src="assets/spools-white-cotton-threads-machine.webp" width="1024" height="684" alt="Rows of white cotton thread spools on a spinning machine" loading="lazy" decoding="async">
+        </figure>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         6. CONTACT (a coupon to cut out)
+         ==================================================================== -->
+    <section class="contact" id="contact" aria-labelledby="contact-title">
+      <div class="coupon">
+        <div class="coupon-left">
+          <h2 id="contact-title">Send us your order</h2>
+          <p>Tell us the shirt, colour, sizes and quantity. We reply with a confirmed quote.</p>
+          <ul class="contact-list" id="contact-list"></ul>
+        </div>
+        <form class="coupon-form" id="contact-form" method="POST" novalidate>
+          <label class="sr" for="f-name">Your name</label>
+          <input id="f-name" name="name" type="text" placeholder="Your name" autocomplete="name" required>
+          <label class="sr" for="f-email">Email address</label>
+          <input id="f-email" name="email" type="email" placeholder="Email address" autocomplete="email" required>
+          <label class="sr" for="f-phone">Phone (optional)</label>
+          <input id="f-phone" name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+          <label class="sr" for="f-message">Your order</label>
+          <textarea id="f-message" name="message" rows="6" placeholder="Shirt, colour, sizes, print and quantity" required></textarea>
+          <button class="btn btn-ink btn-block" type="submit">Send inquiry</button>
+          <p class="form-status" id="form-status" role="status"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======================================================================
+       FOOTER (revealed under the page like a curtain)
+       ====================================================================== -->
+  <footer class="footer">
+    <div class="tiles">
+      <div class="tile t-statement">
+        <p>Plain cotton shirts, made by the hundred thousand.</p>
+        <p class="legal">&copy; <span id="year">2026</span> <span id="copyright">Jolly Philippines. All rights reserved.</span></p>
+      </div>
+      <nav class="tile t-nav" aria-label="Footer">
+        <a href="#build">Build an order</a>
+        <a href="#prices">Price list</a>
+        <a href="#lineup">The line-up</a>
+        <a href="#prints">Prints &amp; embroidery</a>
+        <a href="#why">Why Jolly</a>
+      </nav>
+      <div class="tile t-time">
+        <p>Philippines</p>
+        <p class="clock" id="clock">—</p>
+      </div>
+      <div class="tile t-social" id="footer-social">
+        <p>Follow Jolly</p>
+      </div>
+      <a class="tile t-word" href="#build"><span>Jolly</span></a>
+      <a class="tile t-go" href="#contact">
+        <span>Start an order</span>
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 38L38 10M16 10h22v22" /></svg>
       </a>
-      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-      <ul class="nav-menu" id="nav-menu">
-        <li><a href="#products" class="nav-link">Products</a></li>
-        <li><a href="#custom" class="nav-link">Custom Designs</a></li>
-        <li><a href="#about" class="nav-link">About</a></li>
-        <li><a href="#contact" class="nav-link nav-cta">Contact Us</a></li>
-      </ul>
     </div>
-  </nav>
-
-  <!-- ========================================================================
-       HERO SECTION
-       ======================================================================== -->
-  <section class="hero" id="hero">
-    <div class="container hero-container">
-      <div class="hero-content">
-        <img src="" alt="Jolly Logo" class="hero-logo" id="hero-logo">
-        <h1 class="hero-tagline" id="hero-tagline">[TAGLINE HERE]</h1>
-        <p class="hero-description" id="hero-description">
-          [Short brand description]
-        </p>
-        <div class="hero-buttons">
-          <a href="#products" class="btn btn-primary">View Products</a>
-          <a href="#contact" class="btn btn-outline">Contact Us</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       PRODUCTS SECTION
-       ======================================================================== -->
-  <section class="products" id="products">
-    <div class="container">
-      <h2 class="section-title">Our Products</h2>
-      <p class="section-subtitle">Quality t-shirts for wholesale and bulk orders</p>
-      
-      <div class="products-grid" id="products-grid">
-        <!-- Products will be rendered here by JavaScript -->
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       CUSTOM DESIGNS SECTION
-       ======================================================================== -->
-  <section class="custom" id="custom">
-    <div class="container">
-      <h2 class="section-title" id="custom-title">Custom Prints & Embroidery</h2>
-      <p class="section-description" id="custom-description">
-        [Description of custom design services]
-      </p>
-      
-      <div class="services-list" id="services-list">
-        <!-- Services will be rendered here by JavaScript -->
-      </div>
-      
-      <div class="samples-grid" id="samples-grid">
-        <!-- Sample images will be rendered here by JavaScript -->
-      </div>
-      
-      <div class="custom-cta">
-        <a href="#contact" class="btn btn-primary">Request a Custom Design</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       ABOUT SECTION
-       ======================================================================== -->
-  <section class="about" id="about">
-    <div class="container">
-      <h2 class="section-title" id="about-title">Why Choose Jolly?</h2>
-      <p class="section-description" id="about-description">
-        [About your brand]
-      </p>
-      
-      <div class="highlights-grid" id="highlights-grid">
-        <!-- Highlights will be rendered here by JavaScript -->
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       CONTACT SECTION
-       ======================================================================== -->
-  <section class="contact" id="contact">
-    <div class="container">
-      <h2 class="section-title">Get in Touch</h2>
-      <p class="section-subtitle">Ready to order? Have questions? We'd love to hear from you.</p>
-      
-      <div class="contact-grid">
-        <!-- Contact Info -->
-        <div class="contact-info">
-          <div class="contact-item">
-            <div class="contact-icon">📞</div>
-            <div class="contact-details">
-              <h4>Phone</h4>
-              <p id="contact-phone">[Phone number]</p>
-            </div>
-          </div>
-          
-          <div class="contact-item">
-            <div class="contact-icon">✉️</div>
-            <div class="contact-details">
-              <h4>Email</h4>
-              <p id="contact-email">[Email address]</p>
-            </div>
-          </div>
-          
-          <div class="contact-item">
-            <div class="contact-icon">📍</div>
-            <div class="contact-details">
-              <h4>Address</h4>
-              <p id="contact-address">[Business address]</p>
-            </div>
-          </div>
-          
-          <div class="contact-item">
-            <div class="contact-icon">🕐</div>
-            <div class="contact-details">
-              <h4>Business Hours</h4>
-              <p id="contact-hours">[Business hours]</p>
-            </div>
-          </div>
-          
-          <div class="social-links">
-            <a href="#" id="social-facebook" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-            </a>
-            <a href="#" id="social-instagram" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-            </a>
-          </div>
-        </div>
-        
-        <!-- Contact Form -->
-        <div class="contact-form-wrapper">
-          <form class="contact-form" id="contact-form" action="https://formspree.io/f/[YOUR-FORM-ID]" method="POST">
-            <div class="form-group">
-              <label for="name">Your Name</label>
-              <input type="text" id="name" name="name" required placeholder="Juan Dela Cruz">
-            </div>
-            
-            <div class="form-group">
-              <label for="email">Email Address</label>
-              <input type="email" id="email" name="email" required placeholder="juan@example.com">
-            </div>
-            
-            <div class="form-group">
-              <label for="phone">Phone Number (Optional)</label>
-              <input type="tel" id="phone" name="phone" placeholder="+63 917 123 4567">
-            </div>
-            
-            <div class="form-group">
-              <label for="message">Your Message</label>
-              <textarea id="message" name="message" rows="5" required placeholder="Tell us about your order requirements..."></textarea>
-            </div>
-            
-            <button type="submit" class="btn btn-primary btn-full">Send Message</button>
-          </form>
-          
-          <p class="form-note">
-            Or email us directly at <a href="#" id="email-link">[email]</a>
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       FOOTER
-       ======================================================================== -->
-  <footer class="footer" id="footer">
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-brand">
-          <img src="" alt="Jolly" class="footer-logo" id="footer-logo">
-          <p class="footer-tagline" id="footer-tagline">[Tagline]</p>
-        </div>
-        
-        <nav class="footer-nav">
-          <a href="#products">Products</a>
-          <a href="#custom">Custom Designs</a>
-          <a href="#about">About</a>
-          <a href="#contact">Contact</a>
-        </nav>
-        
-        <div class="footer-social">
-          <a href="#" id="footer-facebook" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-          </a>
-          <a href="#" id="footer-instagram" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-          </a>
-        </div>
-      </div>
-      
-      <div class="footer-bottom">
-        <p>&copy; <span id="current-year">2026</span> <span id="copyright-text">Jolly Philippines. All rights reserved.</span></p>
-      </div>
-    </div>
+    <p class="credits">Pictures: <a href="https://commons.wikimedia.org/wiki/File:Cotton_-_%E0%B4%AA%E0%B4%B0%E0%B5%81%E0%B4%A4%E0%B5%8D%E0%B4%A4%E0%B4%BF_03.JPG">“Cotton 03”</a> by കാക്കര, <a href="https://creativecommons.org/licenses/by-sa/3.0">CC BY-SA 3.0</a>; <a href="https://www.rawpixel.com/image/3301367/free-photo-image-fashion-fabric-machine-spool">“Spools white cotton threads machine”</a>, CC0, via rawpixel; <a href="https://commons.wikimedia.org/w/index.php?curid=145540914">“Wooden spools of sewing thread in different colors 7”</a> by W.carter, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=135292506">“Old Santa Mesa Street jeepneys (Manila)”</a> by Patrickroque01, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; all via Wikimedia Commons unless noted.</p>
   </footer>
 
-  <!-- Scripts -->
+  <!-- The ghost that follows your pointer while you drag a choice -->
+  <div class="ghost" id="ghost" aria-hidden="true"></div>
+
   <script src="content.js"></script>
+  <script src="shirt.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
