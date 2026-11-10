@@ -73,6 +73,14 @@ const SITE_CONTENT = {
         "Pre-shrunk, smooth and soft to the touch",
       ],
       photo: "assets/jolly/tee-catalogue.jpg",
+      // Bulk discount from this shirt's price list: pesos off per piece,
+      // counted on all pieces of this shirt in the order
+      bulkDiscounts: [
+        { min: 6,    max: 119,  off: 10 },
+        { min: 120,  max: 599,  off: 15 },
+        { min: 600,  max: 1199, off: 20 },
+        { min: 1200, max: null, off: 25 },
+      ],
       effectivityDate: "October 10, 2026",
       sizes: [
         { size: "XS",  width: 19, length: 25, white: 230, colored: 260 },
@@ -102,6 +110,14 @@ const SITE_CONTENT = {
         "Double-needle stitching on sleeves and hem, pre-shrunk",
       ],
       photo: "assets/jolly/polo-catalogue.jpg",
+      // Bulk discount from this shirt's price list: pesos off per piece,
+      // counted on all pieces of this shirt in the order
+      bulkDiscounts: [
+        { min: 6,    max: 119,  off: 10 },
+        { min: 120,  max: 599,  off: 15 },
+        { min: 600,  max: 1199, off: 20 },
+        { min: 1200, max: null, off: 25 },
+      ],
       effectivityDate: "October 10, 2026",
       sizes: [
         { size: "XS",  width: 19, length: 28, white: 300, colored: 335 },
@@ -111,22 +127,17 @@ const SITE_CONTENT = {
         { size: "XL",  width: 24, length: 32, white: 335, colored: 365 },
         { size: "2XL", width: 26, length: 33, white: 360, colored: 390 },
       ],
-      // ← CONFIRM which colours the polo comes in. [] = every colour.
+      // The Drive price list only says "white" and "coloured" for the polo.
+      // List the polo's colours here when there is a polo colour card. [] = every colour.
       colors: [],
     },
   ],
 
-  // ==========================================================================
-  // BULK DISCOUNT (pesos off per piece, counted on all pieces in the order)
-  // ==========================================================================
-  bulkDiscounts: [
-    { min: 6,    max: 119,  off: 10 },
-    { min: 120,  max: 599,  off: 15 },
-    { min: 600,  max: 1199, off: 20 },
-    { min: 1200, max: null, off: 25 },
-  ],
-
-  paymentTerms: "30% downpayment, full payment upon delivery.",
+  // Payment terms are not on the Drive price lists yet. Add them here when
+  // they are set (e.g. "30% downpayment, full payment upon delivery."), and
+  // set downpayment to the percentage (e.g. 30) to show it on the order slip.
+  paymentTerms: "",
+  downpayment: 0,
   priceNote: "All prices are subject to change without prior notice.",
 
   // ==========================================================================

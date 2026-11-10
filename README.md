@@ -30,7 +30,8 @@ All editable content is in one file: **`content.js`**
 | **Brand** | Name, the big first-screen line, the sentence under it, logo |
 | **Contact** | Phone, email, address, hours, social links, Formspree form ID |
 | **Products** | The tee and the polo: names, GSM, fabric, features, sizes, measurements, white and coloured prices, which colours each comes in |
-| **Bulk discounts** | The ₱-off-per-piece tiers (6–119, 120–599, 600–1,199, 1,200+) |
+| **Bulk discounts** | Inside each product: the ₱-off-per-piece tiers from its price list, counted per shirt style |
+| **Payment terms** | Blank until set; add the terms and a downpayment % to show them on the slip |
 | **Colors** | The Jolly Color Collection (name + colour code for the drawings) |
 | **Custom Services** | DTF, DTG and embroidery, and where they can sit on the front and back |
 | **About** | "Why Jolly" sentence and the four big figures |
@@ -45,8 +46,8 @@ table onto the shirt: the shirt, the colour, the front print, the back print (ea
 can use a different method: DTF, DTG or embroidery), then a quantity for every size.
 "Add to order" puts the item on the order slip, and the next item keeps the same prints,
 so a tee and a polo with the same logo take seconds. The slip groups items by design
-(the same front and back prints), applies the bulk discount on the whole order, and adds
-up the total and the 30% downpayment. "Send this order" copies everything into the
+(the same front and back prints), applies each shirt's bulk discount, and adds
+up the estimated total. "Send this order" copies everything into the
 inquiry form at the bottom.
 
 The shirts in the builder are drawn in code (`shirt.js`), so every colour works without a

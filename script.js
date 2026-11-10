@@ -52,8 +52,17 @@
   const decoDraw = d => (!d || d.key === 'plain' ? null : { method: d.method.id, place: d.place.id });
   const designKey = it => (it.front ? it.front.key : 'plain') + '|' + (it.back ? it.back.key : 'plain');
 
-  function tierFor(total) {
-    return C.bulkDiscounts.find(t => total >= t.min && (t.max == null || total <= t.max)) || null;
+  function tierFor(product, total) {
+    return (product.bulkDiscounts || []).find(t => total >= t.min && (t.max == null || total <= t.max)) || null;
+  }
+  // The bulk discount is counted per shirt style, as on each Drive price list
+  function discounts(list) {
+    return products.map(p => {
+      const its = list.filter(it => it.product === p);
+      const n = its.reduce((a, it) => a + piecesOf(it), 0);
+      const tier = n ? tierFor(p, n) : null;
+      return { product: p, pcs: n, tier, amount: tier ? tier.off * n : 0 };
+    }).filter(d => d.pcs > 0);
   }
   const tierText = t => `${pcs(t.min)}${t.max == null ? '+' : '–' + pcs(t.max)} pcs`;
 
@@ -131,7 +140,7 @@
       key: 'sizes',
       label: 'Sizes',
       question: 'How many of each size?',
-      hint: 'Prices are per piece. The bulk discount counts every piece in the order.',
+      hint: 'Prices are per piece. Bulk discounts start at 6 pieces of the same shirt.',
       sheet: true,
     },
   ];
@@ -175,6 +184,7 @@
     sumPrint: $('#sum-print'),
     sumTotal: $('#sum-total'),
     sumDown: $('#sum-down'),
+    sumDownLabel: $('#sum-down-label'),
     fine: $('#slip-fine'),
     barcode: $('#barcode'),
     send: $('#send-order'),
@@ -629,21 +639,26 @@
     // 3. The sums (added items only)
     const total = order.reduce((a, it) => a + piecesOf(it), 0);
     const retail = order.reduce((a, it) => a + retailOf(it), 0);
-    const tier = tierFor(total);
-    const disc = tier ? tier.off * total : 0;
+    const ds = discounts(order);
+    const disc = ds.reduce((a, d) => a + d.amount, 0);
+    const hit = ds.filter(d => d.tier);
     const decorated = order.some(it => it.front.key !== 'plain' || it.back.key !== 'plain');
     el.sumPcs.textContent = total ? pcs(total) : '—';
     el.sumRetail.textContent = total ? peso(retail) : '—';
-    el.sumDiscLabel.textContent = tier ? `Bulk discount, ${peso(tier.off)} off each` : 'Bulk discount (from 6 pcs)';
-    el.sumDiscLabel.title = tier ? tierText(tier) : '';
+    el.sumDiscLabel.textContent = hit.length === 1
+      ? `Bulk discount, ${peso(hit[0].tier.off)} off each ${hit[0].product.shortName.split(' ').pop()}`
+      : hit.length ? 'Bulk discounts' : 'Bulk discount (from 6 pcs)';
+    el.sumDiscLabel.title = hit.map(d => `${d.product.shortName}: ${pcs(d.pcs)} pcs, ${peso(d.tier.off)} off each`).join('; ');
     el.sumDisc.textContent = disc ? '−' + peso(disc) : '—';
     el.sumPrint.textContent = !total ? '—' : decorated ? 'Quoted' : 'None';
     el.sumTotal.textContent = peso(retail - disc);
-    el.sumDown.textContent = total ? peso((retail - disc) * 0.3) : '—';
+    el.sumDown.parentElement.hidden = !C.downpayment;
+    el.sumDownLabel.textContent = `${C.downpayment}% downpayment`;
+    el.sumDown.textContent = total && C.downpayment ? peso((retail - disc) * C.downpayment / 100) : '—';
 
     const dates = Array.from(new Set(order.concat([{ product: draftProduct() }]).map(it => it.product.effectivityDate).filter(Boolean)));
     let fine = dates.length ? `Prices effective ${dates.join(', ')}. ` : '';
-    fine += (C.paymentTerms || '') + ' ';
+    if (C.paymentTerms) fine += C.paymentTerms + ' ';
     if (decorated || (draft.front && draft.front.key !== 'plain') || (draft.back && draft.back.key !== 'plain')) fine += 'Prints and embroidery are quoted per design. ';
     fine += C.priceNote || '';
     el.fine.textContent = fine.trim();
@@ -679,9 +694,11 @@
     });
     const total = order.reduce((a, it) => a + piecesOf(it), 0);
     const retail = order.reduce((a, it) => a + retailOf(it), 0);
-    const tier = tierFor(total);
+    const ds = discounts(order).filter(d => d.tier);
+    const disc = ds.reduce((a, d) => a + d.amount, 0);
     out.push(`Total: ${pcs(total)} pcs, ${peso(retail)} before discount`);
-    if (tier) out.push(`Bulk discount: ${peso(tier.off)} off each (${tierText(tier)}), estimated ${peso(retail - tier.off * total)}`);
+    ds.forEach(d => out.push(`Bulk discount, ${d.product.name}: ${peso(d.tier.off)} off each on ${pcs(d.pcs)} pcs (${tierText(d.tier)})`));
+    if (disc) out.push(`Estimated total after discount: ${peso(retail - disc)}`);
     out.push('Please quote the prints and embroidery. I will send the artwork.');
     return out.join('\n');
   }
@@ -770,17 +787,19 @@
           presetBuilder({ product: prod }, 'color');
         });
       });
+      $('#bulk').innerHTML =
+        `<h3>Bulk discount</h3><ul>` +
+        (prod.bulkDiscounts || []).map(t => `<li><span class="bk-off">${peso(t.off)}</span><span class="bk-txt">off each, ${tierText(t)}</span></li>`).join('') +
+        `</ul>`;
       $('#terms').innerHTML = [
         ['Payment', C.paymentTerms],
+        ['Prices', C.priceNote],
         ['Prices effective', prod.effectivityDate],
         ['Prints & embroidery', 'Custom printing available. Request a quote.'],
       ].filter(t => t[1]).map(t => `<div><dt>${esc(t[0])}</dt><dd>${esc(t[1])}</dd></div>`).join('');
     };
 
-    $('#bulk').innerHTML =
-      `<h3>Bulk discount</h3><ul>` +
-      C.bulkDiscounts.map(t => `<li><span class="bk-off">${peso(t.off)}</span><span class="bk-txt">off each, ${tierText(t)}</span></li>`).join('') +
-      `</ul><p>Counted on every piece in the order, tees and polos together.</p>`;
+
 
     tabs.querySelectorAll('[role=tab]').forEach(t => t.addEventListener('click', () => {
       prod = products.find(p => p.id === t.dataset.id); draw();
