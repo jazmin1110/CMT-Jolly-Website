@@ -476,6 +476,15 @@ main { position: relative; z-index: 1; background: var(--paper); }
 .slip-lines dt button:hover { color: var(--red); text-decoration: underline; }
 .slip-lines dd { text-align: right; color: var(--muted); }
 .slip-lines .filled dd { color: var(--ink); font-weight: 800; }
+.slip-lines .default dd { color: var(--ink-2); font-style: italic; }
+.slip-cancel, .slip-clear { font-weight: 700; font-size: .875rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; padding: 2px 0; }
+.slip-cancel { margin-left: 8px; }
+.slip-cancel:hover, .slip-clear:hover { color: var(--red); }
+.slip-clear { display: block; margin: 8px auto 0; }
+.oi.editing { background: rgba(248, 200, 28, .3); }
+.oi-acts em { font-size: .8125rem; font-weight: 700; color: var(--ink-2); }
+.slip-nudge:empty { display: none; }
+.slip-nudge { margin-top: 8px; padding: 8px 10px; background: var(--yellow); font-weight: 800; font-size: .875rem; line-height: 1.35; }
 .slip-lines .just { animation: just 1.2s ease-out; }
 @keyframes just { 0% { background-color: var(--yellow); } 100% { background-color: transparent; } }
 .slip-sum { margin-top: 10px; }
@@ -804,7 +813,10 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
   .builder-grid { grid-template-columns: 1fr; gap: 12px; min-height: 0; }
   .stage { order: 1; padding: 12px; }
   .shirt-drop { min-height: 300px; }
-  .table-side { order: 2; min-height: 0; display: block; }
+  .table-side { order: 2; min-height: 0; display: flex; flex-direction: column; }
+  /* the question sits above the choices; on the size step, under the sizes next to "Add to order" */
+  .step-card { order: -1; }
+  .table-side.sheet-mode .step-card { order: 1; }
   .slip { order: 3; width: 100%; }
 
   .disc-wrap { position: static; width: auto; height: auto; }
@@ -869,4 +881,10 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
   .t-nav { grid-column: 1; } .t-social { grid-column: 2; }
   .t-time { grid-column: 1; } .t-statement { grid-column: 2; }
   .t-statement p:first-child { font-size: 1.125rem; }
+}
+
+/* Small phones: a smaller shirt, so the choices come into view sooner */
+@media (max-width: 600px) {
+  .shirt-drop { min-height: 0; }
+  .flipper { width: min(100%, 290px); }
 }

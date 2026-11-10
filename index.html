@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Jolly: premium cotton tees and polos from the Philippines in eleven colours. Build your order with DTF, DTG or embroidery on the front and back, see the price per piece, and send it in.">
   <title>Jolly · Your everyday, made Jolly</title>
-  <link rel="icon" href="assets/jolly/logo.png">
+  <link rel="icon" href="assets/jolly/logo-96.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -84,7 +84,7 @@
           <div class="step-card" aria-live="polite">
             <ol class="dots" id="dots" aria-label="Progress"></ol>
             <h2 id="step-question">Pick a shirt</h2>
-            <p id="step-hint">Drag a choice onto the shirt, or tap it.</p>
+            <p id="step-hint">Tap one, or drag it onto the shirt.</p>
             <div class="step-nav">
               <button class="btn btn-ghost" id="step-back" type="button">Back</button>
               <button class="btn btn-ink" id="step-next" type="button">Next</button>
@@ -141,9 +141,11 @@
             <div class="sum-row sum-total"><span>Estimated total</span><strong id="sum-total">₱0</strong></div>
             <div class="sum-row" hidden><span id="sum-down-label">Downpayment</span><strong id="sum-down">—</strong></div>
           </div>
+          <p class="slip-nudge" id="slip-nudge" role="status"></p>
           <p class="slip-fine" id="slip-fine"></p>
           <svg class="barcode" id="barcode" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true"></svg>
           <button class="btn btn-red btn-block" id="send-order" type="button">Send this order</button>
+          <button class="slip-clear" id="clear-order" type="button" hidden>Clear the slip</button>
         </aside>
       </div>
     </section>

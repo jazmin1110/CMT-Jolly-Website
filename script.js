@@ -58,6 +58,21 @@
   const designKey = it => sideKey(it.front) + '|' + sideKey(it.back);
   // An option with the customer's artwork carried over (plain drops it)
   const withArt = (d, art) => (!d || d.key === 'plain' || !art ? d : Object.assign({}, d, { art }));
+  // "tee" / "tees", "polo" / "polos"
+  const shirtNoun = (p, n) => { const w = (p.shortName || p.name).split(' ').pop().toLowerCase(); return n === 1 ? w : w + 's'; };
+
+  // Artwork is drawn from a short blob: link, so redrawing the shirt stays
+  // quick; the data copy is kept for the mockup download and for remembering
+  // the order.
+  function blobUrlFromData(data) {
+    try {
+      const comma = data.indexOf(',');
+      const bin = atob(data.slice(comma + 1));
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return URL.createObjectURL(new Blob([bytes], { type: data.slice(5, comma).split(';')[0] }));
+    } catch (e) { return data; }
+  }
 
   function tierFor(product, total) {
     return (product.bulkDiscounts || []).find(t => total >= t.min && (t.max == null || total <= t.max)) || null;
@@ -88,18 +103,37 @@
   let stepIndex = 0;
   let flipped = false;
   let notice = '';
+  let editingId = null;   // the order item being changed, if any
 
   const draftProduct = () => draft.product || products[0];
   const draftColor = () => draft.color || colorsFor(draftProduct())[0];
   const piecesOf = it => Object.values(it.sizes).reduce((a, b) => a + (b || 0), 0);
   const retailOf = it => it.product.sizes.reduce((sum, s) => sum + (it.sizes[s.size] || 0) * unitPrice(s, it.color), 0);
+  const draftItem = () => ({
+    id: editingId || 'draft', product: draftProduct(), color: draftColor(),
+    front: draft.front || PLAIN, back: draft.back || PLAIN, sizes: draft.sizes,
+  });
+  // What the totals count: the order, plus the item being built (or the
+  // changes to the item being edited) once it has sizes
+  function lineItems() {
+    const n = piecesOf(draft);
+    const list = order.map(it => (it.id === editingId && n ? draftItem() : it));
+    if (editingId == null && n) list.push(draftItem());
+    return list;
+  }
+  // Clear a colour the shirt does not come in, and sizes it does not have
+  function fitDraftToProduct() {
+    const p = draftProduct();
+    if (draft.color && !colorsFor(p).includes(draft.color)) draft.color = null;
+    Object.keys(draft.sizes).forEach(k => { if (!p.sizes.some(s => s.size === k)) delete draft.sizes[k]; });
+  }
 
   const STEPS = [
     {
       key: 'product',
       label: 'Shirt',
       question: 'Pick a shirt',
-      hint: 'Drag it onto the shirt in the middle, or tap it.',
+      hint: 'Tap one, or drag it onto the shirt.',
       items: () => products.map((p, i) => ({
         value: p,
         plate: Shirt.draw({ shape: p.shape, color: ['#E4032B', '#1436B4', '#F8C81C'][i % 3] }),
@@ -195,8 +229,72 @@
     fine: $('#slip-fine'),
     barcode: $('#barcode'),
     send: $('#send-order'),
+    clear: $('#clear-order'),
+    nudge: $('#slip-nudge'),
     ghost: $('#ghost'),
   };
+
+  // ---------------------------------------------------------------------------
+  // Remember the order in this browser, so a refresh does not lose it
+  // ---------------------------------------------------------------------------
+  const STORE = 'jolly-order-v1';
+  let saveTimer = 0;
+  function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 400); }
+  function saveNow() {
+    const arts = {};
+    const deco = d => {
+      if (!d) return null;
+      if (d.key === 'plain') return { key: 'plain' };
+      if (d.art) arts[d.art.id] = { name: d.art.name, data: d.art.data, w: d.art.w, h: d.art.h };
+      return { key: d.key, art: d.art ? { id: d.art.id, scale: d.art.scale, dx: d.art.dx, dy: d.art.dy } : null };
+    };
+    const ser = x => ({ id: x.id, product: x.product ? x.product.id : null, color: x.color ? x.color.name : null, front: deco(x.front), back: deco(x.back), sizes: x.sizes });
+    const state = { order: order.map(ser), draft: ser(draft), editingId, nextId };
+    try {
+      localStorage.setItem(STORE, JSON.stringify(Object.assign({ arts }, state)));
+    } catch (e) {
+      // Too big with the pictures in it: remember the order without them
+      try { localStorage.setItem(STORE, JSON.stringify(Object.assign({ arts: {} }, state))); } catch (e2) { /* storage is off */ }
+    }
+  }
+  function restore() {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) { return false; }
+    if (!s || !Array.isArray(s.order)) return false;
+    const hrefs = {};
+    const art = a => {
+      const src = a && s.arts && s.arts[a.id];
+      if (!src || !src.data) return null;
+      if (!hrefs[a.id]) hrefs[a.id] = blobUrlFromData(src.data);
+      artId = Math.max(artId, a.id + 1);
+      return { id: a.id, name: src.name, data: src.data, href: hrefs[a.id], w: src.w, h: src.h, scale: a.scale, dx: a.dx, dy: a.dy };
+    };
+    const deco = (d, side) => {
+      const opt = d && (side === 'front' ? FRONT_OPTIONS : BACK_OPTIONS).find(o => o.key === d.key);
+      if (!opt) return null;
+      const a = d.art ? art(d.art) : null;
+      return a ? withArt(opt, a) : opt;
+    };
+    const item = x => {
+      const product = products.find(p => p.id === x.product) || null;
+      const color = C.colors.find(c => c.name === x.color) || null;
+      const sizes = {};
+      Object.keys(x.sizes || {}).forEach(k => {
+        const q = Math.floor(Number(x.sizes[k]));
+        if (q > 0 && (!product || product.sizes.some(z => z.size === k))) sizes[k] = q;
+      });
+      return { id: x.id, product, color, front: deco(x.front, 'front'), back: deco(x.back, 'back'), sizes };
+    };
+    // Skip anything the price list no longer has
+    s.order.map(item)
+      .filter(it => it.product && it.color && colorsFor(it.product).includes(it.color) && piecesOf(it) > 0)
+      .forEach(it => { it.front = it.front || PLAIN; it.back = it.back || PLAIN; order.push(it); });
+    nextId = Math.max(Number(s.nextId) || 1, ...order.map(o => o.id + 1), 1);
+    if (s.draft) { draft = Object.assign(blankDraft(), item(s.draft)); delete draft.id; }
+    editingId = order.some(o => o.id === s.editingId) ? s.editingId : null;
+    fitDraftToProduct();
+    return order.length > 0 || piecesOf(draft) > 0;
+  }
 
   // ---------------------------------------------------------------------------
   // The turning table
@@ -341,7 +439,7 @@
     });
     el.back.disabled = stepIndex === 0;
     if (step.sheet) {
-      el.next.textContent = 'Add to order';
+      el.next.textContent = editingId ? 'Save changes' : 'Add to order';
       el.next.disabled = piecesOf(draft) === 0;
       el.next.classList.add('btn-red');
       el.next.classList.remove('btn-ink');
@@ -372,13 +470,14 @@
 
   function onDishClick(e, btn, it) {
     if (suppressClick) { suppressClick = false; return; }
-    flyFrom(btn.querySelector('.plate'), () => choose(it.value));
+    const at = stepIndex;
+    flyFrom(btn.querySelector('.plate'), () => choose(it.value, at));
   }
 
   function onDishPointerDown(e, btn, it) {
     if (e.button !== 0) return;
     if (e.pointerType === 'touch') return; // phones: tap only, so the page can scroll
-    drag = { btn, it, x: e.clientX, y: e.clientY, active: false };
+    drag = { btn, it, at: stepIndex, x: e.clientX, y: e.clientY, active: false };
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp, { once: true });
   }
@@ -416,7 +515,7 @@
     el.ghost.classList.remove('held');
     if (overDrop(e.clientX, e.clientY)) {
       el.drop.classList.remove('hot');
-      landGhost(() => choose(d.it.value));
+      landGhost(() => choose(d.it.value, d.at));
     } else {
       const r = d.btn.querySelector('.plate').getBoundingClientRect();
       el.ghost.style.transition = 'transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s';
@@ -465,19 +564,18 @@
     landGhost(done);
   }
 
-  function choose(value) {
-    const step = STEPS[stepIndex];
+  function choose(value, at) {
+    // The step changed while the plate was flying (e.g. Next was pressed)
+    if (at != null && at !== stepIndex) return;
+    const from = stepIndex;
+    const step = STEPS[from];
     if ((step.key === 'front' || step.key === 'back') && draft[step.key] && draft[step.key].art) {
       value = withArt(value, draft[step.key].art);
     }
     draft[step.key] = value;
     notice = '';
 
-    if (step.key === 'product') {
-      // A colour the new shirt does not come in, or sizes it does not have, are cleared
-      if (draft.color && !colorsFor(value).includes(draft.color)) draft.color = null;
-      Object.keys(draft.sizes).forEach(k => { if (!value.sizes.some(s => s.size === k)) delete draft.sizes[k]; });
-    }
+    if (step.key === 'product') fitDraftToProduct();
     if (step.key === 'back') flipped = true;
     if (step.key === 'front') flipped = false;
 
@@ -485,7 +583,8 @@
     renderSlip(step.key);
     el.disc.querySelectorAll('.dish').forEach((d, i) => d.setAttribute('aria-selected', sameValue(step.key, items[i].value, value) ? 'true' : 'false'));
     renderStepCard();
-    setTimeout(() => goTo(stepIndex + 1), reduceMotion ? 0 : 420);
+    // Only move on once, even if the plate was double-clicked
+    setTimeout(() => { if (stepIndex === from) goTo(from + 1); }, reduceMotion ? 0 : 420);
   }
 
   // ---------------------------------------------------------------------------
@@ -493,18 +592,23 @@
   // ---------------------------------------------------------------------------
   function addToOrder() {
     if (!piecesOf(draft)) return;
+    const editing = order.some(it => it.id === editingId) ? editingId : null;
     const item = {
-      id: nextId++,
+      id: editing || nextId++,
       product: draftProduct(),
       color: draftColor(),
       front: cloneDeco(draft.front || PLAIN),
       back: cloneDeco(draft.back || PLAIN),
       sizes: Object.assign({}, draft.sizes),
     };
-    order.push(item);
+    // An edited item keeps its place on the slip
+    const at = order.findIndex(it => it.id === editing);
+    if (at > -1) order[at] = item; else order.push(item);
+    editingId = null;
     // The next item keeps the same prints, so a second shirt style is quick
     draft = blankDraft(item);
-    notice = `Added. The next shirt keeps the same prints (front: ${decoText(item.front)}; back: ${decoText(item.back)}). Change them at the Front and Back steps.`;
+    notice = (editing ? 'Saved your changes.' : 'Added.') +
+      ` The next shirt keeps the same prints (front: ${decoText(item.front)}; back: ${decoText(item.back)}). Change them at the Front and Back steps.`;
     flipped = false;
     stepIndex = 0;
     renderShirt(true);
@@ -514,11 +618,15 @@
     pulseSend();
   }
 
+  // The item stays on the order while it is being changed; "Save changes"
+  // replaces it and "Cancel" leaves it as it was.
   function editItem(id) {
-    const i = order.findIndex(it => it.id === id);
-    if (i === -1) return;
-    const it = order.splice(i, 1)[0];
-    draft = { product: it.product, color: it.color, front: it.front, back: it.back, sizes: Object.assign({}, it.sizes) };
+    const it = order.find(x => x.id === id);
+    if (!it) return;
+    // Do not lose an item that was being built: it goes on the order first
+    if (editingId == null && piecesOf(draft)) addToOrder();
+    editingId = id;
+    draft = { product: it.product, color: it.color, front: cloneDeco(it.front), back: cloneDeco(it.back), sizes: Object.assign({}, it.sizes) };
     notice = '';
     flipped = false;
     renderShirt(true);
@@ -527,10 +635,27 @@
     document.getElementById('build').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
   }
 
+  function startFresh() {
+    editingId = null;
+    draft = blankDraft();
+    notice = '';
+    flipped = false;
+    renderShirt(true);
+    renderSlip();
+    goTo(0);
+  }
+
   function removeItem(id) {
     const i = order.findIndex(it => it.id === id);
     if (i > -1) order.splice(i, 1);
+    if (id === editingId) { startFresh(); return; }
     renderSlip();
+  }
+
+  function clearOrder() {
+    if (!window.confirm('Clear every item from the order slip?')) return;
+    order.length = 0;
+    startFresh();
   }
 
   function pulseSend() {
@@ -608,24 +733,31 @@
   const designName = i => 'Design ' + String.fromCharCode(65 + (i % 26));
 
   function renderSlip(justSet) {
-    // 1. The item being built
+    // 1. The item being built. Once it has sizes, anything not picked shows
+    //    what it will be (the first shirt, White, plain).
+    const n = piecesOf(draft);
+    const pick = (chosen, text, fallback) => (chosen ? [text, false] : n ? [fallback + ' (default)', true] : [null, false]);
     const rows = [
-      ['product', 'Shirt', draft.product ? (draft.product.shortName || draft.product.name) : null],
-      ['color', 'Colour', draft.color ? draft.color.name : null],
-      ['front', 'Front', draft.front ? decoText(draft.front) : null],
-      ['back', 'Back', draft.back ? decoText(draft.back) : null],
-      ['sizes', 'Sizes', piecesOf(draft) ? `${sizeLine(Object.assign({}, draft, { product: draftProduct() }))}` : null],
+      ['product', 'Shirt', ...pick(draft.product, draft.product && (draft.product.shortName || draft.product.name), draftProduct().shortName || draftProduct().name)],
+      ['color', 'Colour', ...pick(draft.color, draft.color && draft.color.name, draftColor().name)],
+      ['front', 'Front', ...pick(draft.front, draft.front && decoText(draft.front), 'Plain')],
+      ['back', 'Back', ...pick(draft.back, draft.back && decoText(draft.back), 'Plain')],
+      ['sizes', 'Sizes', n ? sizeLine(Object.assign({}, draft, { product: draftProduct() })) : null, false],
     ];
     el.draftBox.innerHTML =
-      `<p class="slip-label">${order.length ? 'Next item' : 'Item 1'} <span>in progress</span></p>` +
+      (editingId
+        ? `<p class="slip-label">Changing an item <button type="button" class="slip-cancel" data-cancel>Cancel</button></p>`
+        : `<p class="slip-label">${order.length ? 'Next item' : 'Item 1'} <span>in progress</span></p>`) +
       `<dl class="slip-lines">` +
-      rows.map(([k, label, val]) =>
-        `<div class="line${val ? ' filled' : ''}${k === justSet ? ' just' : ''}">` +
+      rows.map(([k, label, val, dflt]) =>
+        `<div class="line${val ? (dflt ? ' default' : ' filled') : ''}${k === justSet ? ' just' : ''}">` +
         `<dt><button type="button" data-step="${k}">${label}</button></dt><dd>${val ? esc(val) : '—'}</dd></div>`
       ).join('') + `</dl>`;
     el.draftBox.querySelectorAll('button[data-step]').forEach(b => {
       b.addEventListener('click', () => goTo(STEPS.findIndex(s => s.key === b.dataset.step)));
     });
+    const cancel = el.draftBox.querySelector('[data-cancel]');
+    if (cancel) cancel.addEventListener('click', startFresh);
 
     // 2. The order, one section per design (same front and back prints)
     const gs = groups();
@@ -633,11 +765,11 @@
       `<section class="design">` +
       `<h3 class="design-head"><span>${designName(gi)}</span><span class="design-deco">Front: ${esc(decoText(g.front, true))}<br>Back: ${esc(decoText(g.back, true))}</span></h3>` +
       `<ul>` + g.items.map(it =>
-        `<li class="oi">` +
+        `<li class="oi${it.id === editingId ? ' editing' : ''}">` +
         `<span class="oi-dot" style="--sw:${it.color.hex}" aria-hidden="true"></span>` +
         `<span class="oi-main"><strong>${esc(it.product.shortName || it.product.name)}, ${esc(it.color.name)}</strong>` +
         `<span class="oi-sizes">${esc(sizeLine(it))}</span>` +
-        `<span class="oi-acts"><button type="button" data-edit="${it.id}">Edit</button><button type="button" data-remove="${it.id}">Remove</button></span></span>` +
+        `<span class="oi-acts">${it.id === editingId ? '<em>Being changed above</em>' : `<button type="button" data-edit="${it.id}">Edit</button>`}<button type="button" data-remove="${it.id}">Remove</button></span></span>` +
         `<span class="oi-num"><strong>${pcs(piecesOf(it))}</strong> pcs<br>${peso(retailOf(it))}</span>` +
         `</li>`
       ).join('') + `</ul></section>`
@@ -647,18 +779,30 @@
     el.items.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => editItem(Number(b.dataset.edit))));
     el.items.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => removeItem(Number(b.dataset.remove))));
 
-    // 3. The sums (added items only)
-    const total = order.reduce((a, it) => a + piecesOf(it), 0);
-    const retail = order.reduce((a, it) => a + retailOf(it), 0);
-    const ds = discounts(order);
+    // 3. The sums: the order plus the item being built
+    const all = lineItems();
+    const total = all.reduce((a, it) => a + piecesOf(it), 0);
+    const retail = all.reduce((a, it) => a + retailOf(it), 0);
+    const ds = discounts(all);
     const disc = ds.reduce((a, d) => a + d.amount, 0);
     const hit = ds.filter(d => d.tier);
-    const decorated = order.some(it => it.front.key !== 'plain' || it.back.key !== 'plain');
+    const decorated = all.some(it => it.front.key !== 'plain' || it.back.key !== 'plain');
+    const firstMin = Math.min.apply(null, products.map(p => (p.bulkDiscounts && p.bulkDiscounts.length ? p.bulkDiscounts[0].min : Infinity)));
     el.sumPcs.textContent = total ? pcs(total) : '—';
     el.sumRetail.textContent = total ? peso(retail) : '—';
     el.sumDiscLabel.textContent = hit.length === 1
-      ? `Bulk discount, ${peso(hit[0].tier.off)} off each ${hit[0].product.shortName.split(' ').pop()}`
-      : hit.length ? 'Bulk discounts' : 'Bulk discount (from 6 pcs)';
+      ? `Bulk discount, ${peso(hit[0].tier.off)} off each ${shirtNoun(hit[0].product, 1)}`
+      : hit.length ? 'Bulk discounts' : isFinite(firstMin) ? `Bulk discount (from ${firstMin} of a style)` : 'Bulk discount';
+    // A nudge when a bigger discount is close
+    el.nudge.textContent = ds.map(d => {
+      const tiers = (d.product.bulkDiscounts || []).slice().sort((a, b) => a.min - b.min);
+      const next = tiers.find(t => t.min > d.pcs);
+      if (!next) return '';
+      const need = next.min - d.pcs;
+      if (need > Math.max(5, next.min * 0.2)) return '';
+      return `Add ${pcs(need)} more ${shirtNoun(d.product, need)} to get ${peso(next.off)} off each` +
+        (d.tier ? ` (now ${peso(d.tier.off)}).` : '.');
+    }).filter(Boolean).join(' ');
     el.sumDiscLabel.title = hit.map(d => `${d.product.shortName}: ${pcs(d.pcs)} pcs, ${peso(d.tier.off)} off each`).join('; ');
     el.sumDisc.textContent = disc ? '−' + peso(disc) : '—';
     el.sumPrint.textContent = !total ? '—' : decorated ? 'Quoted' : 'None';
@@ -674,9 +818,14 @@
     fine += C.priceNote || '';
     el.fine.textContent = fine.trim();
 
-    el.send.disabled = total === 0 && piecesOf(draft) === 0;
-    el.send.textContent = total === 0 && piecesOf(draft) > 0 ? 'Add and send this order' : 'Send this order';
+    // Sending also adds the item being built, so nothing is left behind
+    el.send.disabled = order.length === 0 && n === 0;
+    el.send.textContent = !n ? 'Send this order'
+      : editingId ? 'Save and send this order'
+      : order.length ? 'Add this item and send' : 'Add and send this order';
+    el.clear.hidden = order.length === 0;
     drawBarcode(order.map(it => it.id + designKey(it) + sizeLine(it)).join('|') + JSON.stringify(draft.sizes));
+    saveSoon();
   }
 
   function drawBarcode(seed) {
@@ -741,7 +890,8 @@
         cv.width = w; cv.height = h;
         cv.getContext('2d').drawImage(img, 0, 0, w, h);
         URL.revokeObjectURL(url);
-        resolve({ id: artId++, name: file.name, href: cv.toDataURL('image/png'), w, h, scale: 0.85, dx: 0, dy: 0 });
+        const data = cv.toDataURL('image/png');
+        resolve({ id: artId++, name: file.name, data, href: blobUrlFromData(data), w, h, scale: 0.85, dx: 0, dy: 0 });
       };
       img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That picture could not be opened.')); };
       img.src = url;
@@ -795,7 +945,7 @@
       d.art.scale = Number(e.target.value) / 100;
       moveArtElement(visibleSide());
     });
-    $('#art-size').addEventListener('change', () => { renderShirt(false); renderDisc(false); });
+    $('#art-size').addEventListener('change', () => { renderShirt(false); renderDisc(false); saveSoon(); });
     $('#art-remove').addEventListener('click', () => setArt(visibleSide(), null));
     $('#mockup-btn').addEventListener('click', downloadMockup);
 
@@ -830,6 +980,7 @@
       moving = null;
       el.drop.classList.remove('moving-art');
       renderShirt(false);
+      saveSoon();
     };
     el.drop.addEventListener('pointerup', stop);
     el.drop.addEventListener('pointercancel', stop);
@@ -850,7 +1001,13 @@
   function downloadMockup() {
     const p = draftProduct();
     const color = draftColor();
-    const opts = { shape: p.shape, color: color.hex, front: decoDraw(draft.front), back: decoDraw(draft.back), outline: true };
+    // A picture made from an SVG can only use embedded artwork, not blob: links
+    const embed = d => {
+      const x = decoDraw(d);
+      if (x && x.art) x.art = Object.assign({}, x.art, { href: x.art.data || x.art.href });
+      return x;
+    };
+    const opts = { shape: p.shape, color: color.hex, front: embed(draft.front), back: embed(draft.back), outline: true };
     const W = 1800, H = 1100;
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
@@ -901,18 +1058,22 @@
     });
     $('#spin-up').addEventListener('click', () => setRot(rot + SPACING));
     $('#spin-down').addEventListener('click', () => setRot(rot - SPACING));
+    // Turn the table with the wheel or trackpad, in proportion to the scroll.
+    // At either end the page scrolls as normal.
     el.discWrap.addEventListener('wheel', e => {
       if (isMobile() || STEPS[stepIndex].sheet) return;
-      const l = rotLimits();
-      if (l.min === l.max) return;
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : 1);
+      const to = clampRot(rot - dy * 0.12);
+      if (Math.abs(to - rot) < 0.01) return;
       e.preventDefault();
-      setRot(rot - Math.sign(e.deltaY) * SPACING * 0.5);
+      setRot(to);
     }, { passive: false });
 
     el.flipBtn.addEventListener('click', () => { flipped = !flipped; renderShirt(false); });
     initArtwork();
+    el.clear.addEventListener('click', clearOrder);
     el.send.addEventListener('click', () => {
-      if (!order.length && piecesOf(draft)) addToOrder();
+      if (piecesOf(draft)) addToOrder();
       if (!order.length) return;
       $('#f-message').value = orderSummary();
       document.getElementById('contact').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
@@ -920,6 +1081,7 @@
     });
     window.addEventListener('resize', () => setRot(rot));
 
+    if (restore()) notice = 'Welcome back. Your order is still on the slip.';
     renderShirt(false);
     renderSlip();
     renderStepCard();
@@ -929,7 +1091,7 @@
   // Lets other sections jump into the builder with choices made
   function presetBuilder(changes, stepKey) {
     Object.assign(draft, changes);
-    if (draft.color && !colorsFor(draftProduct()).includes(draft.color)) draft.color = null;
+    fitDraftToProduct();
     notice = '';
     renderShirt(true);
     renderSlip();

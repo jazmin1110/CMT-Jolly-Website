@@ -34,7 +34,7 @@ const SITE_CONTENT = {
     description:
       "Premium cotton tees and polos from the Philippines. Build your order below: shirt, colour, front and back prints, sizes. Add as many items as you need.",
     // Logo file (leave "" to use the word "Jolly")
-    logo: "assets/jolly/logo.png",
+    logo: "assets/jolly/logo-96.png",
   },
 
   // ==========================================================================
