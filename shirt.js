@@ -98,7 +98,12 @@ const Shirt = (function () {
    *   front: { method: "dtf" | "dtg" | "embroidery", place: "chest" | "front" } or null,
    *   back:  { method: "dtf" | "dtg" | "embroidery", place: "nape" | "back" } or null,
    *   size: "M"          (shown on the neck tag)
+   *   outline: true      (draw the outline in the SVG itself, for downloads)
    * }
+   * A side can also carry the customer's own artwork:
+   *   front: { method, place, art: { href, w, h, scale, dx, dy } }
+   *   href = image data, w/h = its pixel size, scale = 0.3–1 of the print
+   *   area, dx/dy = offset from the centre as a fraction of the print area.
    */
   function draw(opts) {
     const o = Object.assign({ shape: 'tee', color: '#F4F2EE', side: 'front', front: null, back: null, size: '' }, opts);
@@ -113,7 +118,7 @@ const Shirt = (function () {
     s += `<defs><clipPath id="${id}"><path d="${BODY}"/></clipPath></defs>`;
 
     // body
-    s += `<path d="${BODY}" fill="${c}"/>`;
+    s += `<path d="${BODY}" fill="${c}"${o.outline ? ' stroke="rgba(0,0,0,0.3)" stroke-width="2"' : ''}/>`;
 
     // folds and shading
     s += `<g clip-path="url(#${id})">` +
@@ -163,10 +168,60 @@ const Shirt = (function () {
 
     // the print or embroidery for this side
     const deco = front ? o.front : o.back;
-    if (deco && deco.method && ZONES[deco.place]) s += art(deco.method, ZONES[deco.place], c);
+    if (deco && deco.method && ZONES[deco.place]) {
+      if (deco.art) {
+        s += userArt(deco, c, o.side);
+        // the folds show through the print, so it sits in the cloth
+        s += `<g clip-path="url(#${id})" style="mix-blend-mode:multiply" pointer-events="none">` +
+          `<path d="M100 142 Q 120 260 108 404 L 98 404 Z" fill="${soft}"/>` +
+          `<path d="M300 142 Q 282 260 292 404 L 302 404 Z" fill="${soft}"/>` +
+          `<path d="M150 300 Q 200 286 252 304 Q 200 296 150 300 Z" fill="${soft}"/></g>`;
+      } else {
+        s += art(deco.method, ZONES[deco.place], c);
+      }
+    }
 
     s += `</svg>`;
     return s;
+  }
+
+  // ---- the customer's own artwork -------------------------------------------
+  /** Where the artwork sits inside its print area, in shirt units. */
+  function artBox(place, a) {
+    const z = ZONES[place];
+    const ratio = a.w / a.h;
+    const base = Math.min(z.w, z.h * ratio);
+    const w = base * a.scale, h = w / ratio;
+    const maxX = (z.w - w) / 2, maxY = (z.h - h) / 2;
+    const ox = Math.max(-maxX, Math.min(maxX, a.dx * z.w));
+    const oy = Math.max(-maxY, Math.min(maxY, a.dy * z.h));
+    return { x: z.x + maxX + ox, y: z.y + maxY + oy, w, h, zone: z };
+  }
+
+  function userArt(deco, shirtHex, side) {
+    const a = deco.art;
+    const b = artBox(deco.place, a);
+    const fid = 'u' + (++uid);
+    let filter = '';
+    let defs = '';
+    if (deco.method === 'embroidery') {
+      // raised thread: fine horizontal stitches, a little shine and a shadow
+      defs = `<filter id="${fid}" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">` +
+        `<feTurbulence type="fractalNoise" baseFrequency="0.06 1.4" numOctaves="2" seed="7" result="t"/>` +
+        `<feColorMatrix in="t" type="saturate" values="0" result="g"/>` +
+        `<feComponentTransfer in="g" result="th"><feFuncR type="linear" slope="0.5" intercept="0.62"/><feFuncG type="linear" slope="0.5" intercept="0.62"/><feFuncB type="linear" slope="0.5" intercept="0.62"/></feComponentTransfer>` +
+        `<feBlend in="SourceGraphic" in2="th" mode="multiply" result="m"/>` +
+        `<feComposite in="m" in2="SourceAlpha" operator="in" result="c"/>` +
+        `<feDropShadow in="c" dx="0.5" dy="0.8" stdDeviation="0.5" flood-color="#000" flood-opacity="0.45"/>` +
+        `</filter>`;
+      filter = ` filter="url(#${fid})"`;
+    } else if (deco.method === 'dtg') {
+      // ink printed into the cotton: a touch softer
+      filter = ' opacity="0.9"';
+    }
+    return `<g class="user-art" data-side="${side}">${defs ? `<defs>${defs}</defs>` : ''}` +
+      `<image href="${a.href}" x="${b.x.toFixed(2)}" y="${b.y.toFixed(2)}" width="${b.w.toFixed(2)}" height="${b.h.toFixed(2)}" preserveAspectRatio="none"${filter}/>` +
+      `</g>`;
   }
 
   /** A square of fabric with a print sample on it (prints section). */
@@ -201,5 +256,5 @@ const Shirt = (function () {
     return s;
   }
 
-  return { draw, fabric, measured, isLight, inkFor };
+  return { draw, fabric, measured, isLight, inkFor, artBox, zones: ZONES };
 })();

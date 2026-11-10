@@ -48,9 +48,16 @@
   }
   const FRONT_OPTIONS = decoOptions('front');
   const BACK_OPTIONS = decoOptions('back');
-  const decoText = d => (!d || d.key === 'plain' ? 'Plain' : `${d.method.name}, ${d.place.name.toLowerCase()}`);
-  const decoDraw = d => (!d || d.key === 'plain' ? null : { method: d.method.id, place: d.place.id });
-  const designKey = it => (it.front ? it.front.key : 'plain') + '|' + (it.back ? it.back.key : 'plain');
+  // Short form for the slip and stage; the long form names the file
+  const decoText = (d, long) => (!d || d.key === 'plain' ? 'Plain'
+    : `${d.method.name}, ${d.place.name.toLowerCase()}${d.art ? (long ? ` (your design: ${d.art.name})` : ' + your design') : ''}`);
+  const decoDraw = d => (!d || d.key === 'plain' ? null : { method: d.method.id, place: d.place.id, art: d.art || null });
+  const sideKey = d => (d ? d.key + (d.art ? `#${d.art.id}@${d.art.scale.toFixed(2)},${d.art.dx.toFixed(2)},${d.art.dy.toFixed(2)}` : '') : 'plain');
+  // Each item keeps its own copy of the artwork position
+  const cloneDeco = d => (d && d.art ? Object.assign({}, d, { art: Object.assign({}, d.art) }) : d);
+  const designKey = it => sideKey(it.front) + '|' + sideKey(it.back);
+  // An option with the customer's artwork carried over (plain drops it)
+  const withArt = (d, art) => (!d || d.key === 'plain' || !art ? d : Object.assign({}, d, { art }));
 
   function tierFor(product, total) {
     return (product.bulkDiscounts || []).find(t => total >= t.min && (t.max == null || total <= t.max)) || null;
@@ -71,8 +78,8 @@
   // ---------------------------------------------------------------------------
   const blankDraft = keep => ({
     product: null, color: null,
-    front: keep ? keep.front : null,
-    back: keep ? keep.back : null,
+    front: keep ? cloneDeco(keep.front) : null,
+    back: keep ? cloneDeco(keep.back) : null,
     sizes: {},
   });
   let draft = blankDraft();
@@ -119,7 +126,7 @@
       hint: 'DTF, DTG or embroidery, on the left chest or the full front.',
       items: () => FRONT_OPTIONS.map(d => ({
         value: d,
-        plate: Shirt.draw({ shape: draftProduct().shape, color: draftColor().hex, side: 'front', front: decoDraw(d) }),
+        plate: Shirt.draw({ shape: draftProduct().shape, color: draftColor().hex, side: 'front', front: decoDraw(withArt(d, draft.front && draft.front.art)) }),
         name: d.key === 'plain' ? 'Plain front' : d.place.name,
         price: d.key === 'plain' ? '' : d.method.name,
       })),
@@ -131,7 +138,7 @@
       hint: 'Mix it up: the back can use a different method from the front.',
       items: () => BACK_OPTIONS.map(d => ({
         value: d,
-        plate: Shirt.draw({ shape: draftProduct().shape, color: draftColor().hex, side: 'back', back: decoDraw(d) }),
+        plate: Shirt.draw({ shape: draftProduct().shape, color: draftColor().hex, side: 'back', back: decoDraw(withArt(d, draft.back && draft.back.art)) }),
         name: d.key === 'plain' ? 'Plain back' : d.place.name,
         price: d.key === 'plain' ? '' : d.method.name,
       })),
@@ -460,6 +467,9 @@
 
   function choose(value) {
     const step = STEPS[stepIndex];
+    if ((step.key === 'front' || step.key === 'back') && draft[step.key] && draft[step.key].art) {
+      value = withArt(value, draft[step.key].art);
+    }
     draft[step.key] = value;
     notice = '';
 
@@ -487,8 +497,8 @@
       id: nextId++,
       product: draftProduct(),
       color: draftColor(),
-      front: draft.front || PLAIN,
-      back: draft.back || PLAIN,
+      front: cloneDeco(draft.front || PLAIN),
+      back: cloneDeco(draft.back || PLAIN),
       sizes: Object.assign({}, draft.sizes),
     };
     order.push(item);
@@ -549,6 +559,7 @@
 
     el.flipper.classList.toggle('flipped', flipped);
     el.flipBtn.textContent = flipped ? 'See the front' : 'See the back';
+    renderArtBar();
     el.flipBtn.setAttribute('aria-pressed', flipped ? 'true' : 'false');
 
     const bits = [p.shortName || p.name];
@@ -620,7 +631,7 @@
     const gs = groups();
     el.items.innerHTML = gs.map((g, gi) =>
       `<section class="design">` +
-      `<h3 class="design-head"><span>${designName(gi)}</span><span class="design-deco">Front: ${esc(decoText(g.front))}<br>Back: ${esc(decoText(g.back))}</span></h3>` +
+      `<h3 class="design-head"><span>${designName(gi)}</span><span class="design-deco">Front: ${esc(decoText(g.front, true))}<br>Back: ${esc(decoText(g.back, true))}</span></h3>` +
       `<ul>` + g.items.map(it =>
         `<li class="oi">` +
         `<span class="oi-dot" style="--sw:${it.color.hex}" aria-hidden="true"></span>` +
@@ -686,7 +697,7 @@
   function orderSummary() {
     const out = ['Order from the website builder:', ''];
     groups().forEach((g, gi) => {
-      out.push(`${designName(gi)} (front: ${decoText(g.front)}; back: ${decoText(g.back)})`);
+      out.push(`${designName(gi)} (front: ${decoText(g.front, true)}; back: ${decoText(g.back, true)})`);
       g.items.forEach(it => {
         out.push(`  - ${it.product.name}, ${it.color.name}: ${sizeLine(it)} (${pcs(piecesOf(it))} pcs, ${peso(retailOf(it))})`);
       });
@@ -699,8 +710,184 @@
     out.push(`Total: ${pcs(total)} pcs, ${peso(retail)} before discount`);
     ds.forEach(d => out.push(`Bulk discount, ${d.product.name}: ${peso(d.tier.off)} off each on ${pcs(d.pcs)} pcs (${tierText(d.tier)})`));
     if (disc) out.push(`Estimated total after discount: ${peso(retail - disc)}`);
-    out.push('Please quote the prints and embroidery. I will send the artwork.');
+    const names = [];
+    order.forEach(it => [it.front, it.back].forEach(d => { if (d && d.art && !names.includes(d.art.name)) names.push(d.art.name); }));
+    out.push(names.length
+      ? `Please quote the prints and embroidery. I will email my artwork: ${names.join(', ')}.`
+      : 'Please quote the prints and embroidery. I will send the artwork.');
     return out.join('\n');
+  }
+
+  // ---------------------------------------------------------------------------
+  // The customer's own artwork: upload, move, resize, remove, download
+  // The picture stays in the browser; nothing is uploaded anywhere.
+  // ---------------------------------------------------------------------------
+  const DEFAULT_PLACE = { front: 'dtf:front', back: 'dtf:back' };
+  let artId = 1;
+  const visibleSide = () => (flipped ? 'back' : 'front');
+
+  function readArtwork(file) {
+    return new Promise((resolve, reject) => {
+      if (!/^image\/(png|jpeg|webp|svg\+xml|gif)$/.test(file.type)) { reject(new Error('Please use a PNG, JPG, WEBP or SVG file.')); return; }
+      if (file.size > 20 * 1024 * 1024) { reject(new Error('That file is over 20 MB. Please use a smaller one.')); return; }
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        // Shrink big pictures so the page stays quick, and keep transparency
+        let w = img.naturalWidth || 1000, h = img.naturalHeight || 1000;
+        const k = Math.min(1, 1400 / Math.max(w, h));
+        w = Math.max(1, Math.round(w * k)); h = Math.max(1, Math.round(h * k));
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve({ id: artId++, name: file.name, href: cv.toDataURL('image/png'), w, h, scale: 0.85, dx: 0, dy: 0 });
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That picture could not be opened.')); };
+      img.src = url;
+    });
+  }
+
+  function setArt(side, art) {
+    const opts = side === 'front' ? FRONT_OPTIONS : BACK_OPTIONS;
+    let d = draft[side];
+    if (art && (!d || d.key === 'plain')) d = opts.find(o => o.key === DEFAULT_PLACE[side]) || opts[1];
+    if (!d) return;
+    draft[side] = art ? withArt(d, art) : (d.key === 'plain' ? d : Object.assign({}, d, { art: null }));
+    renderShirt(true);
+    renderSlip(side);
+    renderStepCard();
+    if (STEPS[stepIndex].key === side) renderDisc(false);
+  }
+
+  function renderArtBar() {
+    const side = visibleSide();
+    const d = draft[side];
+    const art = d && d.art;
+    $('#art-up-text').textContent = art ? `Replace the ${side} design` : `Add your design to the ${side}`;
+    $('#art-tools').hidden = !art;
+    if (art) $('#art-size').value = Math.round(art.scale * 100);
+    $('#art-hint').textContent = art
+      ? `Drag it on the shirt to move it. ${d.method.name}, ${d.place.name.toLowerCase()}: change the method or spot at the ${side === 'front' ? 'Front' : 'Back'} step.`
+      : 'PNG with a clear background works best. Your file stays on your device.';
+  }
+
+  function initArtwork() {
+    const input = $('#art-file');
+    const status = $('#art-status');
+    input.addEventListener('change', async () => {
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file) return;
+      status.textContent = 'Loading your design…';
+      try {
+        const art = await readArtwork(file);
+        setArt(visibleSide(), art);
+        status.textContent = '';
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    });
+
+    $('#art-size').addEventListener('input', e => {
+      const d = draft[visibleSide()];
+      if (!d || !d.art) return;
+      d.art.scale = Number(e.target.value) / 100;
+      moveArtElement(visibleSide());
+    });
+    $('#art-size').addEventListener('change', () => { renderShirt(false); renderDisc(false); });
+    $('#art-remove').addEventListener('click', () => setArt(visibleSide(), null));
+    $('#mockup-btn').addEventListener('click', downloadMockup);
+
+    // Drag the artwork around inside its print area
+    let moving = null;
+    el.drop.addEventListener('pointerdown', e => {
+      const g = e.target.closest && e.target.closest('.user-art');
+      if (!g || g.dataset.side !== visibleSide()) return;
+      const d = draft[visibleSide()];
+      if (!d || !d.art) return;
+      e.preventDefault();
+      const svg = g.ownerSVGElement;
+      const unit = svg.getBoundingClientRect().width / 400; // screen px per shirt unit
+      const z = Shirt.zones[d.place.id];
+      moving = { d, x: e.clientX, y: e.clientY, dx: d.art.dx, dy: d.art.dy, unit, z, side: visibleSide() };
+      el.drop.setPointerCapture(e.pointerId);
+      el.drop.classList.add('moving-art');
+    });
+    el.drop.addEventListener('pointermove', e => {
+      if (!moving) return;
+      const a = moving.d.art;
+      a.dx = moving.dx + (e.clientX - moving.x) / moving.unit / moving.z.w;
+      a.dy = moving.dy + (e.clientY - moving.y) / moving.unit / moving.z.h;
+      // keep the stored offset inside the print area
+      const b = Shirt.artBox(moving.d.place.id, a);
+      a.dx = (b.x + b.w / 2 - (moving.z.x + moving.z.w / 2)) / moving.z.w;
+      a.dy = (b.y + b.h / 2 - (moving.z.y + moving.z.h / 2)) / moving.z.h;
+      moveArtElement(moving.side);
+    });
+    const stop = () => {
+      if (!moving) return;
+      moving = null;
+      el.drop.classList.remove('moving-art');
+      renderShirt(false);
+    };
+    el.drop.addEventListener('pointerup', stop);
+    el.drop.addEventListener('pointercancel', stop);
+  }
+
+  // Move the picture without redrawing the whole shirt (smooth dragging)
+  function moveArtElement(side) {
+    const d = draft[side];
+    const face = side === 'front' ? el.faceFront : el.faceBack;
+    const img = face.querySelector('.user-art image');
+    if (!d || !d.art || !img) return;
+    const b = Shirt.artBox(d.place.id, d.art);
+    img.setAttribute('x', b.x.toFixed(2)); img.setAttribute('y', b.y.toFixed(2));
+    img.setAttribute('width', b.w.toFixed(2)); img.setAttribute('height', b.h.toFixed(2));
+  }
+
+  // One picture with the front and the back, to keep or send
+  function downloadMockup() {
+    const p = draftProduct();
+    const color = draftColor();
+    const opts = { shape: p.shape, color: color.hex, front: decoDraw(draft.front), back: decoDraw(draft.back), outline: true };
+    const W = 1800, H = 1100;
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#FDF3E7';
+    ctx.fillRect(0, 0, W, H);
+    const status = $('#art-status');
+    const load = svg => new Promise((res, rej) => {
+      const im = new Image();
+      im.onload = () => res(im);
+      im.onerror = rej;
+      im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', '<svg width="800" height="840" '));
+    });
+    Promise.all([load(Shirt.draw(Object.assign({ side: 'front' }, opts))), load(Shirt.draw(Object.assign({ side: 'back' }, opts)))])
+      .then(([f, b]) => {
+        ctx.drawImage(f, 80, 140, 800, 840);
+        ctx.drawImage(b, 920, 140, 800, 840);
+        ctx.fillStyle = '#D8022A';
+        ctx.font = '900 64px Archivo, sans-serif';
+        ctx.fillText('jolly', 80, 100);
+        ctx.fillStyle = '#1E1E1E';
+        ctx.font = '700 32px Archivo, sans-serif';
+        ctx.fillText(`${p.name} · ${color.name}`, 260, 96);
+        ctx.font = '600 28px Archivo, sans-serif';
+        ctx.fillText('Front: ' + decoText(draft.front || PLAIN), 80, 1040);
+        ctx.fillText('Back: ' + decoText(draft.back || PLAIN), 920, 1040);
+        cv.toBlob(blob => {
+          if (!blob) { status.textContent = 'Your browser could not make the picture.'; return; }
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `jolly-mockup-${p.id}-${color.name.toLowerCase().replace(/\s+/g, '-')}.png`;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+          status.textContent = 'Mockup saved to your downloads.';
+        }, 'image/png');
+      })
+      .catch(() => { status.textContent = 'Your browser could not make the picture.'; });
   }
 
   // ---------------------------------------------------------------------------
@@ -723,6 +910,7 @@
     }, { passive: false });
 
     el.flipBtn.addEventListener('click', () => { flipped = !flipped; renderShirt(false); });
+    initArtwork();
     el.send.addEventListener('click', () => {
       if (!order.length && piecesOf(draft)) addToOrder();
       if (!order.length) return;

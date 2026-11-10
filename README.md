@@ -50,6 +50,12 @@ so a tee and a polo with the same logo take seconds. The slip groups items by de
 up the estimated total. "Send this order" copies everything into the
 inquiry form at the bottom.
 
+Customers can also **add their own design**: under the shirt, "Add your design" puts an
+uploaded PNG, JPG or SVG on the side they are looking at. They drag it to move it, use
+the slider to resize it, and "Download mockup" saves a picture of the front and back.
+The file stays in their browser; the inquiry message names the files and asks them to
+email the artwork.
+
 The shirts in the builder are drawn in code (`shirt.js`), so every colour works without a
 photo of each one. The real product photos, catalogue sheets and logo from the Jolly
 Google Drive folder are in `assets/jolly/`.

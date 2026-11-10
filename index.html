@@ -105,6 +105,23 @@
             <p class="stage-note" id="stage-note">Round neck · 100% cotton</p>
             <button class="btn btn-paper" id="flip-btn" type="button" aria-pressed="false">See the back</button>
           </div>
+          <!-- The customer's own design (stays in the browser) -->
+          <div class="art-bar">
+            <div class="art-row">
+              <label class="btn btn-ink art-up">
+                <input type="file" id="art-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="sr">
+                <span id="art-up-text">Add your design to the front</span>
+              </label>
+              <div class="art-tools" id="art-tools" hidden>
+                <label for="art-size">Size</label>
+                <input type="range" id="art-size" min="30" max="100" step="1" value="85">
+                <button type="button" class="art-remove" id="art-remove">Remove</button>
+              </div>
+              <button type="button" class="btn btn-paper art-mock" id="mockup-btn">Download mockup</button>
+            </div>
+            <p class="art-hint" id="art-hint">PNG with a clear background works best. Your file stays on your device.</p>
+            <p class="art-status" id="art-status" role="status"></p>
+          </div>
         </div>
 
         <!-- RIGHT: the order slip -->
@@ -231,7 +248,7 @@
       <div class="coupon">
         <div class="coupon-left">
           <h2 id="contact-title">Send us your order</h2>
-          <p>Tell us the shirts, colours, sizes and prints. Build it above and the order fills in here. We reply with a confirmed quote.</p>
+          <p>Tell us the shirts, colours, sizes and prints. Build it above and the order fills in here. We reply with a confirmed quote. If you added your own design, email us the file too so we can quote it.</p>
           <ul class="contact-list" id="contact-list"></ul>
         </div>
         <form class="coupon-form" id="contact-form" method="POST" novalidate>
