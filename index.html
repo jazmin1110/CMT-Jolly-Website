@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Jolly: plain 100% cotton round-neck shirts from the Philippines, made in bulk. Build your order, see the price per piece, and send it in.">
-  <title>Jolly · Plain cotton shirts, made in bulk</title>
+  <meta name="description" content="Jolly: premium cotton tees and polos from the Philippines in eleven colours. Build your order with DTF, DTG or embroidery on the front and back, see the price per piece, and send it in.">
+  <title>Jolly · Your everyday, made Jolly</title>
+  <link rel="icon" href="assets/jolly/logo.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +21,7 @@
        ====================================================================== -->
   <header class="bar">
     <a class="wordmark" href="#build" aria-label="Jolly, back to the top">
-      <img alt="" id="logo-img" hidden>
+      <img alt="" id="logo-img" width="40" height="40" hidden>
       <span id="brand-name">Jolly</span>
     </a>
     <nav class="bar-links" aria-label="Main">
@@ -46,7 +47,7 @@
         <div class="poster p-red"></div>
         <div class="poster p-yellow"></div>
         <div class="poster p-blue"></div>
-        <div class="poster p-photo"><img src="assets/old-santa-mesa-street-jeepneys-manila-06.jpg" alt="" width="1920" height="1440"></div>
+        <div class="poster p-photo"><img src="assets/jolly/rail-03.jpg" alt="" width="1800" height="1013"></div>
         <div class="poster p-paper"></div>
         <div class="poster p-red2"></div>
         <div class="poster p-yellow2"></div>
@@ -54,8 +55,8 @@
       </div>
 
       <div class="builder-head">
-        <h1 id="build-title"><span id="hero-tagline">Build your shirt order</span></h1>
-        <p class="lead" id="hero-description">Plain 100% cotton round-neck shirts from the Philippines, priced per piece and made in bulk.</p>
+        <h1 id="build-title"><span id="hero-tagline">Your everyday, made Jolly.</span></h1>
+        <p class="lead" id="hero-description">Premium cotton tees and polos. Build your order: shirt, colour, front and back prints, sizes.</p>
       </div>
 
       <div class="builder-grid">
@@ -77,9 +78,12 @@
             </button>
           </div>
 
+          <!-- Last step: a quantity for every size (filled by script.js) -->
+          <div class="size-sheet" id="size-sheet"></div>
+
           <div class="step-card" aria-live="polite">
             <ol class="dots" id="dots" aria-label="Progress"></ol>
-            <h2 id="step-question">Pick your shirt</h2>
+            <h2 id="step-question">Pick a shirt</h2>
             <p id="step-hint">Drag a choice onto the shirt, or tap it.</p>
             <div class="step-nav">
               <button class="btn btn-ghost" id="step-back" type="button">Back</button>
@@ -109,12 +113,14 @@
             <span class="slip-brand">Jolly</span>
             <span class="slip-kind">Order slip</span>
           </div>
-          <dl class="slip-lines" id="slip-lines">
-            <!-- Filled by script.js -->
-          </dl>
+          <!-- The item being built, then the order grouped by design (filled by script.js) -->
+          <div class="slip-draft" id="slip-draft"></div>
+          <div class="slip-items" id="slip-items" hidden></div>
           <div class="slip-sum">
-            <div class="sum-row"><span>Price per shirt</span><strong id="sum-each">—</strong></div>
-            <div class="sum-row"><span>Print or embroidery</span><strong id="sum-print">—</strong></div>
+            <div class="sum-row"><span>Pieces in the order</span><strong id="sum-pcs">—</strong></div>
+            <div class="sum-row"><span>Shirts at retail</span><strong id="sum-retail">—</strong></div>
+            <div class="sum-row"><span id="sum-disc-label">Bulk discount</span><strong id="sum-disc">—</strong></div>
+            <div class="sum-row"><span>Prints &amp; embroidery</span><strong id="sum-print">—</strong></div>
             <div class="sum-row sum-total"><span>Estimated total</span><strong id="sum-total">₱0</strong></div>
             <div class="sum-row"><span>30% downpayment</span><strong id="sum-down">—</strong></div>
           </div>
@@ -131,9 +137,14 @@
     <section class="prices" id="prices" aria-labelledby="prices-title">
       <div class="sheet">
         <h2 id="prices-title">Price list</h2>
-        <p class="sheet-sub" id="price-sub">Round neck, 100% pure cotton. Price per piece.</p>
+        <div class="tabs price-tabs" role="tablist" aria-label="Shirts" id="price-tabs"></div>
+        <p class="sheet-sub" id="price-sub">Retail price per piece.</p>
 
         <div class="price-groups" id="price-groups">
+          <!-- Filled by script.js -->
+        </div>
+
+        <div class="bulk" id="bulk">
           <!-- Filled by script.js -->
         </div>
 
@@ -164,12 +175,13 @@
           <h2 id="lineup-title">The line-up</h2>
           <p class="lineup-name" id="lineup-name"></p>
           <p id="lineup-desc"></p>
+          <ul class="lineup-features" id="lineup-features"></ul>
           <div class="swatches" id="swatches" role="radiogroup" aria-label="Colours"></div>
           <p class="swatch-name" id="swatch-name"></p>
         </div>
         <div class="cells">
           <a class="cell cell-ink" href="#build" id="lineup-build">Build this shirt</a>
-          <a class="cell cell-soft" href="#prices">See the price list</a>
+          <a class="cell cell-soft" href="assets/jolly/tee-catalogue.jpg" id="lineup-spec" target="_blank" rel="noopener">See the spec sheet</a>
         </div>
       </div>
     </section>
@@ -203,11 +215,11 @@
       </div>
       <div class="why-grid">
         <figure class="why-photo why-photo-a">
-          <img src="assets/cotton-03.jpg" width="1920" height="1440" alt="An open cotton boll on the plant, ready to pick" loading="lazy" decoding="async">
+          <img src="assets/jolly/rail-01.jpg" width="1800" height="1013" alt="Jolly tees hanging on a rail, in Black, Gargoyle, Cork, Estate Blue, Snorkel Blue, Jolly Green, True Red, First Blush, Pastel Yellow and White" loading="lazy" decoding="async">
         </figure>
         <ul class="facts" id="facts"></ul>
         <figure class="why-photo why-photo-b">
-          <img src="assets/spools-white-cotton-threads-machine.webp" width="1024" height="684" alt="Rows of white cotton thread spools on a spinning machine" loading="lazy" decoding="async">
+          <img src="assets/cotton-03.jpg" width="1920" height="1440" alt="An open cotton boll on the plant, ready to pick" loading="lazy" decoding="async">
         </figure>
       </div>
     </section>
@@ -219,7 +231,7 @@
       <div class="coupon">
         <div class="coupon-left">
           <h2 id="contact-title">Send us your order</h2>
-          <p>Tell us the shirt, colour, sizes and quantity. We reply with a confirmed quote.</p>
+          <p>Tell us the shirts, colours, sizes and prints. Build it above and the order fills in here. We reply with a confirmed quote.</p>
           <ul class="contact-list" id="contact-list"></ul>
         </div>
         <form class="coupon-form" id="contact-form" method="POST" novalidate>
@@ -230,7 +242,7 @@
           <label class="sr" for="f-phone">Phone (optional)</label>
           <input id="f-phone" name="phone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
           <label class="sr" for="f-message">Your order</label>
-          <textarea id="f-message" name="message" rows="6" placeholder="Shirt, colour, sizes, print and quantity" required></textarea>
+          <textarea id="f-message" name="message" rows="6" placeholder="Shirts, colours, sizes, prints and quantities" required></textarea>
           <button class="btn btn-ink btn-block" type="submit">Send inquiry</button>
           <p class="form-status" id="form-status" role="status"></p>
         </form>
@@ -244,7 +256,7 @@
   <footer class="footer">
     <div class="tiles">
       <div class="tile t-statement">
-        <p>Plain cotton shirts, made by the hundred thousand.</p>
+        <p id="footer-statement">Premium cotton tees and polos, from six pieces to thousands.</p>
         <p class="legal">&copy; <span id="year">2026</span> <span id="copyright">Jolly Philippines. All rights reserved.</span></p>
       </div>
       <nav class="tile t-nav" aria-label="Footer">
@@ -267,7 +279,7 @@
         <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 38L38 10M16 10h22v22" /></svg>
       </a>
     </div>
-    <p class="credits">Pictures: <a href="https://commons.wikimedia.org/wiki/File:Cotton_-_%E0%B4%AA%E0%B4%B0%E0%B5%81%E0%B4%A4%E0%B5%8D%E0%B4%A4%E0%B4%BF_03.JPG">“Cotton 03”</a> by കാക്കര, <a href="https://creativecommons.org/licenses/by-sa/3.0">CC BY-SA 3.0</a>; <a href="https://www.rawpixel.com/image/3301367/free-photo-image-fashion-fabric-machine-spool">“Spools white cotton threads machine”</a>, CC0, via rawpixel; <a href="https://commons.wikimedia.org/w/index.php?curid=145540914">“Wooden spools of sewing thread in different colors 7”</a> by W.carter, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=135292506">“Old Santa Mesa Street jeepneys (Manila)”</a> by Patrickroque01, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; all via Wikimedia Commons unless noted.</p>
+    <p class="credits">Shirt photos by Jolly. Other pictures: <a href="https://commons.wikimedia.org/wiki/File:Cotton_-_%E0%B4%AA%E0%B4%B0%E0%B5%81%E0%B4%A4%E0%B5%8D%E0%B4%A4%E0%B4%BF_03.JPG">“Cotton 03”</a> by കാക്കര, <a href="https://creativecommons.org/licenses/by-sa/3.0">CC BY-SA 3.0</a>; <a href="https://commons.wikimedia.org/w/index.php?curid=145540914">“Wooden spools of sewing thread in different colors 7”</a> by W.carter, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; via Wikimedia Commons.</p>
   </footer>
 
   <!-- The ghost that follows your pointer while you drag a choice -->

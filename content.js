@@ -9,12 +9,15 @@
  * RULES:
  * 1. Keep the quotes (" ") around text.
  * 2. Keep the commas (,) at the end of lines.
- * 3. Prices are numbers only, no peso sign: 100, not ₱100.
+ * 3. Prices are numbers only, no peso sign: 230, not ₱230.
  * 4. Save, then refresh the browser to see the change.
  *
  * Anything still written like "[THIS]" is a placeholder. The site hides
  * placeholders automatically, so it is safe to leave them until you have
  * the real details.
+ *
+ * Source for products, prices and colours: the Jolly Google Drive folder
+ * (price lists effective October 10, 2026).
  * ============================================================================
  */
 
@@ -25,13 +28,13 @@ const SITE_CONTENT = {
   // ==========================================================================
   brand: {
     name: "Jolly",
-    // Big line on the first screen (keep it short, about 30 letters)
-    tagline: "Build your shirt order",
+    // Big line on the first screen
+    tagline: "Your everyday, made Jolly.",
     // One sentence under it
     description:
-      "Plain 100% cotton round-neck shirts from the Philippines, priced per piece and made in bulk. Pick the colour, size, print and quantity, and the order slip adds it up for you.",
-    // Optional logo file in /images/ (leave "" to use the word "Jolly")
-    logo: "",
+      "Premium cotton tees and polos from the Philippines. Build your order below: shirt, colour, front and back prints, sizes. Add as many items as you need.",
+    // Logo file (leave "" to use the word "Jolly")
+    logo: "assets/jolly/logo.png",
   },
 
   // ==========================================================================
@@ -51,113 +54,126 @@ const SITE_CONTENT = {
   // ==========================================================================
   // PRODUCTS
   // ==========================================================================
-  // Only products with isActive: true AND at least one size can be ordered.
-  // The others show as "coming soon" in the builder and the catalogue.
+  // Each size has a price for WHITE shirts and a price for COLOURED shirts.
+  // width and length are in inches.
   products: [
     {
-      id: "round-neck",
-      name: "100% Pure Cotton Round Neck T-Shirt",
-      shortName: "Round neck",
-      description:
-        "Complete with front & back print, woven tag on L-H sleeve, silk size tag.",
-      // The shirt drawing to use: "tee", "vneck" or "polo"
-      shape: "tee",
-      minimumOrder: 200000, // pieces (number only)
-      paymentTerms:
-        "30% downpayment, full payment upon delivery. Prices subject to change without prior notice.",
-      effectivityDate: "03/20/2026",
-      // { size, width (inches), length (inches), price (pesos per piece) }
-      sizes: [
-        { size: "4",   width: 24, length: 17,   price: 100 },
-        { size: "6",   width: 28, length: 18,   price: 105 },
-        { size: "8",   width: 29, length: 19.5, price: 110 },
-        { size: "10",  width: 30, length: 20.5, price: 115 },
-        { size: "12",  width: 32, length: 21,   price: 125 },
-        { size: "14",  width: 33, length: 22,   price: 135 },
-        { size: "16",  width: 35, length: 23,   price: 145 },
-        { size: "18",  width: 37, length: 24.5, price: 152 },
-        { size: "20",  width: 38, length: 25.5, price: 158 },
-        { size: "XS",  width: 40, length: 25.5, price: 165 },
-        { size: "S",   width: 41, length: 26,   price: 172 },
-        { size: "M",   width: 42, length: 27,   price: 180 },
-        { size: "L",   width: 44, length: 28,   price: 199 }, // ← check: L is priced higher than XL
-        { size: "XL",  width: 46, length: 29,   price: 195 },
-        { size: "2XL", width: 48, length: 30,   price: 200 },
+      id: "tee",
+      name: "Round Neck Tubular Tee",
+      shortName: "Round neck tee",
+      line: "Classics",
+      shape: "tee",          // the drawing to use: "tee" or "polo"
+      gsm: 195,
+      fabric: "100% premium compact siro cotton, single jersey, seamless tubular body",
+      features: [
+        "Semi-mercerized for colour vibrancy and colour fastness",
+        "Ribbed collar with high-density stitching that holds its shape",
+        "Shoulder-to-shoulder taping",
+        "Double-needle stitching on sleeves and hem",
+        "Pre-shrunk, smooth and soft to the touch",
       ],
-      isActive: true,
-    },
-    {
-      id: "v-neck",
-      name: "V-Neck T-Shirt",
-      shortName: "V-neck",
-      description: "Coming soon.",
-      shape: "vneck",
-      minimumOrder: 0,
-      paymentTerms: "",
-      effectivityDate: "",
-      sizes: [],
-      isActive: false,
+      photo: "assets/jolly/tee-catalogue.jpg",
+      effectivityDate: "October 10, 2026",
+      sizes: [
+        { size: "XS",  width: 19, length: 25, white: 230, colored: 260 },
+        { size: "S",   width: 20, length: 26, white: 235, colored: 265 },
+        { size: "M",   width: 21, length: 27, white: 240, colored: 270 },
+        { size: "L",   width: 22, length: 28, white: 245, colored: 275 },
+        { size: "XL",  width: 23, length: 29, white: 255, colored: 285 },
+        { size: "2XL", width: 24, length: 30, white: 275, colored: 315 },
+        { size: "3XL", width: 25, length: 32, white: 295, colored: 335 },
+      ],
+      // Colour names from the list below. Leave [] to offer every colour.
+      colors: [],
     },
     {
       id: "polo",
-      name: "Polo Shirt",
-      shortName: "Polo",
-      description: "Coming soon.",
+      name: "Pique Polo Shirt",
+      shortName: "Pique polo",
+      line: "Classics",
       shape: "polo",
-      minimumOrder: 0,
-      paymentTerms: "",
-      effectivityDate: "",
-      sizes: [],
-      isActive: false,
+      gsm: 235,
+      fabric: "100% premium compact siro cotton pique",
+      features: [
+        "Flat-knit collar and cuffs",
+        "3-button placket, tightly stitched for durability",
+        "Shoulder-to-shoulder taping",
+        "Semi-mercerized for colour vibrancy and colour fastness",
+        "Double-needle stitching on sleeves and hem, pre-shrunk",
+      ],
+      photo: "assets/jolly/polo-catalogue.jpg",
+      effectivityDate: "October 10, 2026",
+      sizes: [
+        { size: "XS",  width: 19, length: 28, white: 300, colored: 335 },
+        { size: "S",   width: 20, length: 29, white: 310, colored: 340 },
+        { size: "M",   width: 21, length: 30, white: 315, colored: 345 },
+        { size: "L",   width: 22, length: 31, white: 320, colored: 350 },
+        { size: "XL",  width: 24, length: 32, white: 335, colored: 365 },
+        { size: "2XL", width: 26, length: 33, white: 360, colored: 390 },
+      ],
+      // ← CONFIRM which colours the polo comes in. [] = every colour.
+      colors: [],
     },
   ],
 
   // ==========================================================================
-  // SHIRT COLOURS (shown in the builder)
+  // BULK DISCOUNT (pesos off per piece, counted on all pieces in the order)
+  // ==========================================================================
+  bulkDiscounts: [
+    { min: 6,    max: 119,  off: 10 },
+    { min: 120,  max: 599,  off: 15 },
+    { min: 600,  max: 1199, off: 20 },
+    { min: 1200, max: null, off: 25 },
+  ],
+
+  paymentTerms: "30% downpayment, full payment upon delivery.",
+  priceNote: "All prices are subject to change without prior notice.",
+
+  // ==========================================================================
+  // COLOURS (the Jolly Color Collection)
   // ==========================================================================
   // name = what customers see, hex = the colour of the drawing.
-  // ← CONFIRM this list against the colours you actually stock.
   colors: [
-    { name: "White",        hex: "#F7F5F0" },
-    { name: "Black",        hex: "#1E1E1E" },
-    { name: "Jolly red",    hex: "#D32F2F" },
-    { name: "Navy",         hex: "#1F2A4A" },
-    { name: "Royal blue",   hex: "#2952A3" },
-    { name: "Heather grey", hex: "#A7A9AC" },
-    { name: "Sun yellow",   hex: "#F6C343" },
-    { name: "Forest green", hex: "#2F5D3A" },
-    { name: "Maroon",       hex: "#6B1E2A" },
-    { name: "Sky blue",     hex: "#8EC5E8" },
+    { name: "White",         hex: "#F4F2EE" },
+    { name: "Turtle Dove",   hex: "#E2D3B8" },
+    { name: "Gargoyle",      hex: "#58534F" },
+    { name: "Cork",          hex: "#5E3F2D" },
+    { name: "Estate Blue",   hex: "#18204F" },
+    { name: "Snorkel Blue",  hex: "#0C3DB4" },
+    { name: "Pastel Yellow", hex: "#F5DF66" },
+    { name: "First Blush",   hex: "#F5A2AD" },
+    { name: "True Red",      hex: "#B0121F" },
+    { name: "Jolly Green",   hex: "#0B6B2C" },
+    { name: "Black",         hex: "#161517" },
   ],
 
   // ==========================================================================
   // CUSTOM PRINTS & EMBROIDERY
   // ==========================================================================
+  // The front and the back are decorated separately, so methods can be
+  // mixed: DTF on the front and embroidery on the back, for example.
   customServices: {
     title: "Custom prints & embroidery",
     description:
-      "Every Jolly shirt can leave the factory plain, printed or embroidered. Send us the artwork and the quantity and we will quote the decoration per piece.",
-    // note = short line under each service on the price sheet
-    services: [
-      { name: "Screen printing",  note: "Flat colours, best for big runs" },
-      { name: "Digital printing", note: "Full colour and photo artwork" },
-      { name: "Embroidery",       note: "Stitched logos for uniforms" },
-      { name: "Heat transfer",    note: "Sharp detail, numbers and names" },
-      { name: "Sublimation",      note: "Edge-to-edge colour on light shirts" },
+      "Decorate the front and the back separately, and mix the methods: a DTF print on the front with an embroidered logo on the back, or DTG on both. Send us the artwork and we quote the decoration per piece.",
+    // id must stay "dtf", "dtg" or "embroidery" (it picks the drawing)
+    methods: [
+      { id: "dtf",        name: "DTF",        long: "Direct-to-film print", note: "Bright full colour on any shirt colour, light or dark" },
+      { id: "dtg",        name: "DTG",        long: "Direct-to-garment print", note: "Photo detail printed straight into the cotton, soft to the touch" },
+      { id: "embroidery", name: "Embroidery", long: "Embroidery", note: "Stitched logos that last, best for uniforms and polos" },
     ],
-    // Where a print can go (shown in the builder)
-    placements: [
-      { id: "chest", name: "Left chest" },
-      { id: "front", name: "Full front" },
-      { id: "back",  name: "Full back" },
-      { id: "both",  name: "Front & back" },
-    ],
+    // Where a decoration can sit on each side
+    placements: {
+      front: [
+        { id: "chest", name: "Left chest" },
+        { id: "front", name: "Full front" },
+      ],
+      back: [
+        { id: "nape", name: "Upper back" },
+        { id: "back", name: "Full back" },
+      ],
+    },
   },
-
-  // ==========================================================================
-  // ORDER QUANTITIES (the last step of the builder)
-  // ==========================================================================
-  quantities: [200000, 250000, 300000, 500000, 1000000],
 
   // ==========================================================================
   // WHY JOLLY
@@ -165,29 +181,27 @@ const SITE_CONTENT = {
   about: {
     title: "Why Jolly",
     description:
-      "Jolly makes one thing well: plain cotton shirts, in the volumes real orders need.",
-    // The big figures. figure = the big text, title = what it means,
-    // description = one line under it.
+      "Everyday shirts, made properly: premium compact siro cotton, finished the way good shirts should be, in eleven colours.",
     highlights: [
       {
-        figure: "200,000",
-        title: "pieces per order, minimum",
-        description: "Made for volume: schools, companies, organisations and resellers.",
+        figure: "11",
+        title: "colours",
+        description: "From White and Turtle Dove to True Red and Jolly Green.",
+      },
+      {
+        figure: "195",
+        title: "GSM single jersey tee",
+        description: "A seamless tubular body. The pique polo is a heavier 235 GSM.",
       },
       {
         figure: "100%",
-        title: "pure cotton",
-        description: "Every shirt, every size. Nothing blended in.",
+        title: "premium compact siro cotton",
+        description: "Semi-mercerized for colour that stays bright, and pre-shrunk.",
       },
       {
-        figure: "15",
-        title: "sizes, kids 4 to adult 2XL",
-        description: "Each one measured and priced on the list above.",
-      },
-      {
-        figure: "2 tags",
-        title: "on every shirt",
-        description: "A woven Jolly tag on the left sleeve and a silk size tag at the neck.",
+        figure: "₱25",
+        title: "off every piece at 1,200+",
+        description: "Bulk discounts start at just 6 pieces.",
       },
     ],
   },
@@ -196,6 +210,7 @@ const SITE_CONTENT = {
   // FOOTER
   // ==========================================================================
   footer: {
+    statement: "Premium cotton tees and polos, from six pieces to thousands.",
     copyrightText: "Jolly Philippines. All rights reserved.",
   },
 };

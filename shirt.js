@@ -25,8 +25,8 @@ const Shirt = (function () {
   function isLight(hex) { return luminance(hex) > 0.28; }
   function inkFor(hex) { return isLight(hex) ? '#1E1E1E' : '#F7F5F0'; }
   function threadFor(hex) {
-    if (!isLight(hex)) return '#F6C343';
-    return luminance(hex) > 0.6 && hex.toUpperCase() !== '#D32F2F' ? '#D32F2F' : '#1E1E1E';
+    if (!isLight(hex)) return '#F8C81C';
+    return luminance(hex) > 0.6 ? '#E4032B' : '#1E1E1E';
   }
 
   // ---- the shirt outlines (viewBox 0 0 400 420) ----------------------------
@@ -36,9 +36,10 @@ const Shirt = (function () {
 
   // Where each print placement sits on the shirt
   const ZONES = {
-    chest: { x: 222, y: 92, w: 58, h: 46 },
-    front: { x: 128, y: 104, w: 144, h: 136 },
-    back:  { x: 122, y: 88,  w: 156, h: 150 },
+    chest: { x: 222, y: 92,  w: 58,  h: 46 },   // left chest (the wearer's left)
+    front: { x: 128, y: 104, w: 144, h: 136 },  // full front
+    nape:  { x: 156, y: 62,  w: 88,  h: 46 },   // upper back, under the collar
+    back:  { x: 122, y: 88,  w: 156, h: 150 },  // full back
   };
 
   // ---- print artwork, drawn inside a box -----------------------------------
@@ -48,58 +49,44 @@ const Shirt = (function () {
     const cx = x + w / 2;
     const id = 'a' + (++uid);
 
-    if (method === 'screen') {
+    // DTF: a crisp full-colour transfer that sits on top of the fabric
+    if (method === 'dtf') {
       return (
         `<g class="art">` +
-        `<circle cx="${cx}" cy="${y + h * 0.26}" r="${w * 0.17}" fill="#D32F2F"/>` +
-        `<text x="${cx}" y="${y + h * 0.72}" text-anchor="middle" font-family="Archivo, sans-serif" ` +
-        `font-weight="900" font-stretch="75%" font-size="${w * 0.3}" fill="${ink}" textLength="${w * 0.92}" lengthAdjust="spacingAndGlyphs">YOUR LOGO</text>` +
-        `<rect x="${x + w * 0.04}" y="${y + h * 0.8}" width="${w * 0.92}" height="${h * 0.06}" fill="${ink}"/>` +
+        `<circle cx="${cx}" cy="${y + h * 0.28}" r="${Math.min(w, h) * 0.2}" fill="#E4032B"/>` +
+        `<circle cx="${cx + Math.min(w, h) * 0.14}" cy="${y + h * 0.14}" r="${Math.min(w, h) * 0.06}" fill="#F8C81C"/>` +
+        `<text x="${cx}" y="${y + h * 0.74}" text-anchor="middle" font-family="Archivo, sans-serif" ` +
+        `font-weight="900" font-stretch="75%" font-size="${w * 0.28}" fill="${ink}" textLength="${w * 0.92}" lengthAdjust="spacingAndGlyphs">YOUR LOGO</text>` +
+        `<rect x="${x + w * 0.04}" y="${y + h * 0.82}" width="${w * 0.92}" height="${h * 0.06}" fill="#1436B4"/>` +
         `</g>`
       );
     }
-    if (method === 'digital') {
+    // DTG: photo-like full colour artwork printed into the cotton
+    if (method === 'dtg') {
       return (
         `<g class="art"><clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${w * 0.06}"/></clipPath>` +
-        `<g clip-path="url(#${id})">` +
+        `<g clip-path="url(#${id})" opacity="0.94">` +
         `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#8EC5E8"/>` +
-        `<circle cx="${x + w * 0.7}" cy="${y + h * 0.32}" r="${w * 0.16}" fill="#F6C343"/>` +
-        `<path d="M${x} ${y + h * 0.78} L${x + w * 0.32} ${y + h * 0.42} L${x + w * 0.58} ${y + h * 0.72} L${x + w * 0.78} ${y + h * 0.5} L${x + w} ${y + h * 0.74} V${y + h} H${x} Z" fill="#2F5D3A"/>` +
-        `<path d="M${x} ${y + h * 0.86} Q${x + w * 0.5} ${y + h * 0.74} ${x + w} ${y + h * 0.88} V${y + h} H${x} Z" fill="#2952A3"/>` +
+        `<circle cx="${x + w * 0.7}" cy="${y + h * 0.32}" r="${w * 0.16}" fill="#F8C81C"/>` +
+        `<path d="M${x} ${y + h * 0.78} L${x + w * 0.32} ${y + h * 0.42} L${x + w * 0.58} ${y + h * 0.72} L${x + w * 0.78} ${y + h * 0.5} L${x + w} ${y + h * 0.74} V${y + h} H${x} Z" fill="#0B6B2C"/>` +
+        `<path d="M${x} ${y + h * 0.86} Q${x + w * 0.5} ${y + h * 0.74} ${x + w} ${y + h * 0.88} V${y + h} H${x} Z" fill="#1436B4"/>` +
         `</g></g>`
       );
     }
+    // Embroidery: a stitched badge
     if (method === 'embroidery') {
       const t = threadFor(shirtHex);
       const r = Math.min(w, h) * 0.46;
       return (
         `<g class="art" fill="none" stroke="${t}" stroke-linecap="round">` +
-        `<circle cx="${cx}" cy="${y + h / 2}" r="${r}" stroke-width="${w * 0.035}" stroke-dasharray="${w * 0.03} ${w * 0.018}"/>` +
-        `<circle cx="${cx}" cy="${y + h / 2}" r="${r * 0.82}" stroke-width="${w * 0.012}" stroke-dasharray="${w * 0.02} ${w * 0.014}"/>` +
-        `<text x="${cx}" y="${y + h / 2 + w * 0.08}" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="800" ` +
-        `font-stretch="80%" font-size="${w * 0.22}" fill="${t}" stroke="none" textLength="${r * 1.4}" lengthAdjust="spacingAndGlyphs">LOGO</text>` +
-        `</g>`
-      );
-    }
-    if (method === 'heat') {
-      return (
-        `<g class="art" font-family="Archivo, sans-serif" text-anchor="middle">` +
-        `<text x="${cx}" y="${y + h * 0.24}" font-weight="800" font-stretch="100%" font-size="${w * 0.15}" fill="${ink}" letter-spacing="${w * 0.02}">JOLLY</text>` +
-        `<text x="${cx}" y="${y + h * 0.92}" font-weight="900" font-stretch="70%" font-size="${h * 0.72}" fill="#D32F2F" stroke="${ink}" stroke-width="${w * 0.02}">23</text>` +
+        `<circle cx="${cx}" cy="${y + h / 2}" r="${r}" stroke-width="${Math.min(w, h) * 0.035}" stroke-dasharray="${Math.min(w, h) * 0.03} ${Math.min(w, h) * 0.018}"/>` +
+        `<circle cx="${cx}" cy="${y + h / 2}" r="${r * 0.82}" stroke-width="${Math.min(w, h) * 0.012}" stroke-dasharray="${Math.min(w, h) * 0.02} ${Math.min(w, h) * 0.014}"/>` +
+        `<text x="${cx}" y="${y + h / 2 + r * 0.18}" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="800" ` +
+        `font-stretch="80%" font-size="${r * 0.5}" fill="${t}" stroke="none" textLength="${r * 1.4}" lengthAdjust="spacingAndGlyphs">LOGO</text>` +
         `</g>`
       );
     }
     return '';
-  }
-
-  // Sublimation covers the whole shirt in an all-over pattern
-  function allOver(clipId) {
-    let stripes = '';
-    const colors = ['#D32F2F', '#F6C343', '#2952A3', '#F7F5F0'];
-    for (let i = -10; i < 20; i++) {
-      stripes += `<rect x="${i * 34}" y="-200" width="17" height="900" fill="${colors[(i + 20) % 4]}" transform="rotate(32 200 210)"/>`;
-    }
-    return `<g clip-path="url(#${clipId})" opacity="0.9">${stripes}</g>`;
   }
 
   // ---- the shirt itself ----------------------------------------------------
@@ -108,14 +95,13 @@ const Shirt = (function () {
    *   shape: "tee" | "vneck" | "polo",
    *   color: "#hex",
    *   side: "front" | "back",
-   *   method: "" | "screen" | "digital" | "embroidery" | "heat" | "sublimation",
-   *   placement: "" | "chest" | "front" | "back" | "both",
+   *   front: { method: "dtf" | "dtg" | "embroidery", place: "chest" | "front" } or null,
+   *   back:  { method: "dtf" | "dtg" | "embroidery", place: "nape" | "back" } or null,
    *   size: "M"          (shown on the neck tag)
-   *   highlight: "chest" (draws a placement zone instead of artwork)
    * }
    */
   function draw(opts) {
-    const o = Object.assign({ shape: 'tee', color: '#F7F5F0', side: 'front', method: '', placement: '', size: '' }, opts);
+    const o = Object.assign({ shape: 'tee', color: '#F4F2EE', side: 'front', front: null, back: null, size: '' }, opts);
     const id = 's' + (++uid);
     const c = o.color;
     const dark = isLight(c) ? 'rgba(0,0,0,0.16)' : 'rgba(0,0,0,0.35)';
@@ -128,9 +114,6 @@ const Shirt = (function () {
 
     // body
     s += `<path d="${BODY}" fill="${c}"/>`;
-
-    // all-over sublimation sits under the seams
-    if (o.method === 'sublimation') s += allOver(id);
 
     // folds and shading
     s += `<g clip-path="url(#${id})">` +
@@ -175,29 +158,12 @@ const Shirt = (function () {
     // woven Jolly tag on the wearer's left sleeve
     const tagX = front ? 334 : 66;
     const tagRot = front ? 32 : -32;
-    s += `<g transform="translate(${tagX} 140) rotate(${tagRot})"><rect x="-14" y="-6" width="28" height="12" fill="#D32F2F"/>` +
-      `<text x="0" y="3.4" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="800" font-size="8" fill="#F7F5F0">jolly</text></g>`;
+    s += `<g transform="translate(${tagX} 140) rotate(${tagRot})"><rect x="-14" y="-6" width="28" height="12" fill="#E4032B"/>` +
+      `<text x="0" y="3.4" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="800" font-size="8" fill="#FDF3E7">jolly</text></g>`;
 
-    // placement zone highlight (used on the small choice plates)
-    if (o.highlight) {
-      const zones = o.highlight === 'both' ? ['front'] : [o.highlight];
-      zones.forEach(z => {
-        const b = ZONES[z];
-        s += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="#D32F2F" opacity="0.85"/>`;
-      });
-      if (o.highlight === 'both') {
-        s += `<text x="200" y="300" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="900" font-size="44" fill="#D32F2F">+ back</text>`;
-      }
-    }
-
-    // the print or embroidery
-    if (o.method && o.method !== 'sublimation' && o.placement) {
-      let zone = null;
-      if (front && o.placement === 'chest') zone = ZONES.chest;
-      if (front && (o.placement === 'front' || o.placement === 'both')) zone = ZONES.front;
-      if (!front && (o.placement === 'back' || o.placement === 'both')) zone = ZONES.back;
-      if (zone) s += art(o.method, zone, c);
-    }
+    // the print or embroidery for this side
+    const deco = front ? o.front : o.back;
+    if (deco && deco.method && ZONES[deco.place]) s += art(deco.method, ZONES[deco.place], c);
 
     s += `</svg>`;
     return s;
@@ -211,12 +177,7 @@ const Shirt = (function () {
       `<path d="M0 3h6M3 0v6" stroke="rgba(0,0,0,0.05)" stroke-width="1"/></pattern>` +
       `<clipPath id="${id}c"><rect width="300" height="300"/></clipPath></defs>`;
     s += `<rect width="300" height="300" fill="${color}"/>`;
-    if (method === 'sublimation') {
-      let stripes = '';
-      const colors = ['#D32F2F', '#F6C343', '#2952A3', '#F7F5F0'];
-      for (let i = -8; i < 16; i++) stripes += `<rect x="${i * 30}" y="-150" width="15" height="600" fill="${colors[(i + 16) % 4]}" transform="rotate(32 150 150)"/>`;
-      s += `<g clip-path="url(#${id}c)">${stripes}</g>`;
-    } else if (method) {
+    if (method) {
       s += art(method, { x: 60, y: 60, w: 180, h: 180 }, color);
     }
     s += `<rect width="300" height="300" fill="url(#${id})"/>`;
@@ -225,9 +186,9 @@ const Shirt = (function () {
   }
 
   /** Shirt with measuring arrows (price list section). */
-  function measured(color) {
+  function measured(color, shape) {
     const ink = '#1E1E1E';
-    let s = draw({ shape: 'tee', color: color, side: 'front' }).replace('</svg>', '');
+    let s = draw({ shape: shape || 'tee', color: color, side: 'front' }).replace('</svg>', '');
     s = s.replace('viewBox="0 0 400 420"', 'viewBox="0 0 440 440"');
     s += `<g stroke="${ink}" stroke-width="3" fill="${ink}">` +
       `<line x1="104" y1="190" x2="296" y2="190"/>` +

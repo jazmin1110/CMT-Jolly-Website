@@ -3,7 +3,8 @@
  * JOLLY WEBSITE - MAIN JAVASCRIPT
  * ============================================================================
  * Reads everything from content.js and builds the page:
- *   1. The order builder (turning table, shirt, order slip)
+ *   1. The order builder (turning table, shirt, order slip). An order can
+ *      hold several items; the slip groups them by their prints.
  *   2. The price list and measuring figure
  *   3. The line-up of shirts and colours
  *   4. The prints & embroidery samples
@@ -18,131 +19,141 @@
   const peso = n => '₱' + Math.round(n).toLocaleString('en-PH');
   const pcs = n => Number(n).toLocaleString('en-PH');
   const isSet = v => typeof v === 'string' && v.trim() !== '' && !/\[.*\]/.test(v);
+  const esc = v => String(v).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------------------------------------------------------------------------
-  // Data, tidied up for the builder
+  // Data helpers
   // ---------------------------------------------------------------------------
-  const products = C.products.map(p => Object.assign({}, p, {
-    orderable: p.isActive && p.sizes && p.sizes.length > 0,
-  }));
-  const firstOrderable = products.find(p => p.orderable) || products[0];
+  const products = C.products;
+  const methods = C.customServices.methods;
+  const places = C.customServices.placements;
 
-  // Turn the service names into drawing styles
-  function methodId(name) {
-    const n = name.toLowerCase();
-    if (n.includes('embroid')) return 'embroidery';
-    if (n.includes('digital')) return 'digital';
-    if (n.includes('heat')) return 'heat';
-    if (n.includes('sublim')) return 'sublimation';
-    return 'screen';
+  function colorsFor(p) {
+    if (!p || !p.colors || !p.colors.length) return C.colors;
+    return C.colors.filter(c => p.colors.includes(c.name));
   }
-  const methods = [{ id: 'none', name: 'Plain', note: 'No print, just the shirt' }].concat(
-    C.customServices.services.map(s => ({ id: methodId(s.name), name: s.name, note: s.note || '' }))
-  );
+  const isWhite = c => c && c.name.toLowerCase() === 'white';
+  const unitPrice = (size, color) => (isWhite(color) ? size.white : size.colored);
+  const lowest = p => Math.min.apply(null, p.sizes.map(s => s.white));
+
+  // A decoration choice for one side: { key, method, place } or the plain one
+  const PLAIN = { key: 'plain' };
+  function decoOptions(side) {
+    const list = [PLAIN];
+    places[side].forEach(pl => methods.forEach(m => {
+      list.push({ key: m.id + ':' + pl.id, method: m, place: pl });
+    }));
+    return list;
+  }
+  const FRONT_OPTIONS = decoOptions('front');
+  const BACK_OPTIONS = decoOptions('back');
+  const decoText = d => (!d || d.key === 'plain' ? 'Plain' : `${d.method.name}, ${d.place.name.toLowerCase()}`);
+  const decoDraw = d => (!d || d.key === 'plain' ? null : { method: d.method.id, place: d.place.id });
+  const designKey = it => (it.front ? it.front.key : 'plain') + '|' + (it.back ? it.back.key : 'plain');
+
+  function tierFor(total) {
+    return C.bulkDiscounts.find(t => total >= t.min && (t.max == null || total <= t.max)) || null;
+  }
+  const tierText = t => `${pcs(t.min)}${t.max == null ? '+' : '–' + pcs(t.max)} pcs`;
 
   // ---------------------------------------------------------------------------
-  // Builder state
+  // Builder state: the item being built (draft) and the order so far
   // ---------------------------------------------------------------------------
-  const state = {
-    product: null,   // product object
-    color: null,     // colour object
-    size: null,      // size object
-    method: null,    // method object
-    placement: null, // placement object
-    qty: null,       // number
-  };
+  const blankDraft = keep => ({
+    product: null, color: null,
+    front: keep ? keep.front : null,
+    back: keep ? keep.back : null,
+    sizes: {},
+  });
+  let draft = blankDraft();
+  const order = [];
+  let nextId = 1;
   let stepIndex = 0;
   let flipped = false;
+  let notice = '';
+
+  const draftProduct = () => draft.product || products[0];
+  const draftColor = () => draft.color || colorsFor(draftProduct())[0];
+  const piecesOf = it => Object.values(it.sizes).reduce((a, b) => a + (b || 0), 0);
+  const retailOf = it => it.product.sizes.reduce((sum, s) => sum + (it.sizes[s.size] || 0) * unitPrice(s, it.color), 0);
 
   const STEPS = [
     {
       key: 'product',
       label: 'Shirt',
-      question: 'Pick your shirt',
+      question: 'Pick a shirt',
       hint: 'Drag it onto the shirt in the middle, or tap it.',
-      items: () => products.map(p => ({
+      items: () => products.map((p, i) => ({
         value: p,
-        disabled: !p.orderable,
-        plate: Shirt.draw({ shape: p.shape, color: ['#D32F2F', '#1F2A4A', '#F6C343'][products.indexOf(p) % 3] }),
+        plate: Shirt.draw({ shape: p.shape, color: ['#E4032B', '#1436B4', '#F8C81C'][i % 3] }),
         name: p.shortName || p.name,
-        price: p.orderable ? 'from ' + peso(Math.min.apply(null, p.sizes.map(s => s.price))) : 'Soon',
+        price: 'from ' + peso(lowest(p)),
       })),
     },
     {
       key: 'color',
       label: 'Colour',
       question: 'Pick a colour',
-      hint: 'Turn the table for more colours.',
-      items: () => C.colors.map(c => ({
+      hint: 'Turn the table for all eleven. Coloured shirts cost a little more than white.',
+      items: () => colorsFor(draftProduct()).map(c => ({
         value: c,
-        plate: Shirt.draw({ shape: (state.product || firstOrderable).shape, color: c.hex }),
+        plate: Shirt.draw({ shape: draftProduct().shape, color: c.hex, front: decoDraw(draft.front) }),
         name: c.name,
         price: '',
       })),
     },
     {
-      key: 'size',
-      label: 'Size',
-      question: 'Pick a size',
-      hint: 'Kids 4 to adult 2XL. Prices are per piece.',
-      items: () => (state.product || firstOrderable).sizes.map(s => ({
-        value: s,
-        plate: `<span class="plate-size">${s.size}</span><span class="plate-dim">${s.width}×${s.length}″</span>`,
-        name: /^\d+$/.test(s.size) ? 'Kids ' + s.size : 'Size ' + s.size,
-        price: peso(s.price),
+      key: 'front',
+      label: 'Front',
+      question: 'What goes on the front?',
+      hint: 'DTF, DTG or embroidery, on the left chest or the full front.',
+      items: () => FRONT_OPTIONS.map(d => ({
+        value: d,
+        plate: Shirt.draw({ shape: draftProduct().shape, color: draftColor().hex, side: 'front', front: decoDraw(d) }),
+        name: d.key === 'plain' ? 'Plain front' : d.place.name,
+        price: d.key === 'plain' ? '' : d.method.name,
       })),
     },
     {
-      key: 'method',
-      label: 'Print',
-      question: 'Plain or printed?',
-      hint: 'Prints and embroidery are quoted per design.',
-      items: () => methods.map(m => ({
-        value: m,
-        plate: Shirt.fabric(m.id === 'none' ? '' : m.id, (state.color || C.colors[0]).hex),
-        name: m.name,
-        price: m.id === 'none' ? 'Included' : 'Quote',
+      key: 'back',
+      label: 'Back',
+      question: 'And on the back?',
+      hint: 'Mix it up: the back can use a different method from the front.',
+      items: () => BACK_OPTIONS.map(d => ({
+        value: d,
+        plate: Shirt.draw({ shape: draftProduct().shape, color: draftColor().hex, side: 'back', back: decoDraw(d) }),
+        name: d.key === 'plain' ? 'Plain back' : d.place.name,
+        price: d.key === 'plain' ? '' : d.method.name,
       })),
     },
     {
-      key: 'placement',
-      label: 'Placement',
-      question: 'Where does it go?',
-      hint: 'Pick where the print or stitching sits.',
-      skip: () => !state.method || state.method.id === 'none' || state.method.id === 'sublimation',
-      items: () => C.customServices.placements.map(p => ({
-        value: p,
-        plate: Shirt.draw({
-          shape: (state.product || firstOrderable).shape,
-          color: '#A7A9AC',
-          side: p.id === 'back' ? 'back' : 'front',
-          highlight: p.id,
-        }),
-        name: p.name,
-        price: '',
-      })),
-    },
-    {
-      key: 'qty',
-      label: 'Quantity',
-      question: 'How many pieces?',
-      hint: () => 'The minimum order is ' + pcs((state.product || firstOrderable).minimumOrder) + ' pieces.',
-      items: () => C.quantities.map(q => ({
-        value: q,
-        plate: `<span class="plate-qty">${q >= 1000000 ? (q / 1000000) + 'M' : (q / 1000) + 'K'}</span><span class="plate-dim">pieces</span>`,
-        name: pcs(q) + ' pcs',
-        price: state.size ? peso(q * state.size.price) : '',
-      })),
+      key: 'sizes',
+      label: 'Sizes',
+      question: 'How many of each size?',
+      hint: 'Prices are per piece. The bulk discount counts every piece in the order.',
+      sheet: true,
     },
   ];
+
+  function isChosen(key) {
+    if (key === 'sizes') return piecesOf(draft) > 0;
+    return draft[key] != null;
+  }
+  function sameValue(key, a, b) {
+    if (!a || !b) return false;
+    if (key === 'front' || key === 'back') return a.key === b.key;
+    return a === b;
+  }
 
   // ---------------------------------------------------------------------------
   // Elements
   // ---------------------------------------------------------------------------
   const el = {
+    tableSide: $('.table-side'),
     disc: $('#disc'),
     discWrap: $('#disc-wrap'),
+    sizeSheet: $('#size-sheet'),
     dots: $('#dots'),
     question: $('#step-question'),
     hint: $('#step-hint'),
@@ -155,8 +166,12 @@
     flipBtn: $('#flip-btn'),
     stamp: $('#stamp'),
     stageNote: $('#stage-note'),
-    lines: $('#slip-lines'),
-    sumEach: $('#sum-each'),
+    draftBox: $('#slip-draft'),
+    items: $('#slip-items'),
+    sumPcs: $('#sum-pcs'),
+    sumRetail: $('#sum-retail'),
+    sumDisc: $('#sum-disc'),
+    sumDiscLabel: $('#sum-disc-label'),
     sumPrint: $('#sum-print'),
     sumTotal: $('#sum-total'),
     sumDown: $('#sum-down'),
@@ -177,11 +192,9 @@
 
   function isMobile() { return window.matchMedia('(max-width: 900px)').matches; }
 
-  // Plate i sits at angle (i × SPACING + rot). Keep the turn between
-  // "first plate at the top of the arc" and "last plate at the bottom".
   function rotLimits() {
     const span = (items.length - 1) * SPACING;
-    if (span <= HI - LO) { const r = (LO + HI) / 2 - span / 2; return { min: r, max: r }; } // all fit
+    if (span <= HI - LO) { const r = (LO + HI) / 2 - span / 2; return { min: r, max: r }; }
     return { min: HI - span, max: LO };
   }
   function clampRot(r) {
@@ -203,10 +216,10 @@
     $('#spin-down').disabled = rot <= l.min + 0.5;
   }
 
-  function currentValue(key) { return state[key]; }
-
   function renderDisc(animate) {
     const step = STEPS[stepIndex];
+    el.tableSide.classList.toggle('sheet-mode', !!step.sheet);
+    if (step.sheet) { renderSizeSheet(); return; }
     items = step.items();
     const build = () => {
       el.disc.innerHTML = '';
@@ -217,18 +230,15 @@
         b.setAttribute('role', 'option');
         b.style.setProperty('--a', i * SPACING + 'deg');
         b.style.setProperty('--i', i);
-        const selected = currentValue(step.key) === it.value;
-        b.setAttribute('aria-selected', selected ? 'true' : 'false');
-        if (it.disabled) { b.disabled = true; b.classList.add('soon'); }
+        b.setAttribute('aria-selected', sameValue(step.key, draft[step.key], it.value) ? 'true' : 'false');
         b.innerHTML =
           `<span class="dish-in"><span class="plate">${it.plate}</span>` +
-          `<span class="tag"><span class="tag-name">${it.name}</span>${it.price ? `<span class="tag-price">${it.price}</span>` : ''}</span></span>`;
+          `<span class="tag"><span class="tag-name">${esc(it.name)}</span>${it.price ? `<span class="tag-price">${esc(it.price)}</span>` : ''}</span></span>`;
         b.addEventListener('click', e => onDishClick(e, b, it));
         b.addEventListener('pointerdown', e => onDishPointerDown(e, b, it));
         el.disc.appendChild(b);
       });
-      // Start with the selected plate (or the first) in view
-      const sel = items.findIndex(it => currentValue(step.key) === it.value);
+      const sel = items.findIndex(it => sameValue(step.key, draft[step.key], it.value));
       setRot(sel > -1 ? (LO + HI) / 2 - sel * SPACING : LO);
     };
 
@@ -246,38 +256,93 @@
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // The size sheet (last step): a quantity for every size
+  // ---------------------------------------------------------------------------
+  function renderSizeSheet() {
+    const p = draftProduct();
+    const color = draftColor();
+    el.sizeSheet.innerHTML =
+      `<div class="ss-head"><span>${esc(p.shortName || p.name)} · ${esc(color.name)}</span><span>${isWhite(color) ? 'White price' : 'Coloured price'}</span></div>` +
+      `<ul class="ss-rows">` +
+      p.sizes.map(s => {
+        const q = draft.sizes[s.size] || 0;
+        return `<li class="ss-row${q ? ' has' : ''}" data-size="${esc(s.size)}">` +
+          `<span class="ss-size">${esc(s.size)}</span>` +
+          `<span class="ss-dim">${s.width}×${s.length} in</span>` +
+          `<span class="ss-price">${peso(unitPrice(s, color))}</span>` +
+          `<span class="ss-step">` +
+          `<button type="button" class="ss-btn" data-d="-1" aria-label="One fewer ${esc(s.size)}">−</button>` +
+          `<input type="number" inputmode="numeric" min="0" step="1" value="${q || ''}" placeholder="0" aria-label="How many in size ${esc(s.size)}">` +
+          `<button type="button" class="ss-btn" data-d="1" aria-label="One more ${esc(s.size)}">+</button>` +
+          `</span></li>`;
+      }).join('') +
+      `</ul><p class="ss-foot" id="ss-foot"></p>`;
+
+    el.sizeSheet.querySelectorAll('.ss-row').forEach(row => {
+      const size = row.dataset.size;
+      const input = row.querySelector('input');
+      const set = v => {
+        const n = Math.max(0, Math.min(999999, Math.floor(Number(v) || 0)));
+        if (n) draft.sizes[size] = n; else delete draft.sizes[size];
+        input.value = n || '';
+        row.classList.toggle('has', n > 0);
+        afterSizes();
+      };
+      input.addEventListener('input', () => set(input.value));
+      row.querySelectorAll('.ss-btn').forEach(b => b.addEventListener('click', () => {
+        const step = Number(b.dataset.d) * ((draft.sizes[size] || 0) >= 10 && b.dataset.d === '1' ? 5 : 1);
+        set((draft.sizes[size] || 0) + step);
+      }));
+    });
+    afterSizes();
+  }
+
+  function afterSizes() {
+    const n = piecesOf(draft);
+    const foot = $('#ss-foot');
+    if (foot) foot.textContent = n ? `${pcs(n)} pcs in this item · ${peso(retailOf(Object.assign({}, draft, { product: draftProduct(), color: draftColor() })))} before discount` : 'Type a number or use + and −.';
+    renderShirt(false);
+    renderSlip();
+    renderStepCard();
+  }
+
+  // ---------------------------------------------------------------------------
+  // The step card
+  // ---------------------------------------------------------------------------
   function renderStepCard() {
     const step = STEPS[stepIndex];
     el.question.textContent = step.question;
-    el.hint.textContent = typeof step.hint === 'function' ? step.hint() : step.hint;
+    el.hint.textContent = notice && stepIndex === 0 ? notice : step.hint;
     el.dots.innerHTML = '';
     STEPS.forEach((s, i) => {
       const li = document.createElement('li');
-      const skipped = s.skip && s.skip();
-      li.className = (i === stepIndex ? 'now ' : '') + (state[s.key] != null ? 'done ' : '') + (skipped ? 'skipped' : '');
-      li.innerHTML = `<button type="button" aria-label="${s.label}${state[s.key] != null ? ', chosen' : ''}"${i === stepIndex ? ' aria-current="step"' : ''}></button>`;
+      li.className = (i === stepIndex ? 'now ' : '') + (isChosen(s.key) ? 'done' : '');
+      li.innerHTML = `<button type="button" aria-label="${s.label}${isChosen(s.key) ? ', chosen' : ''}"${i === stepIndex ? ' aria-current="step"' : ''}></button>`;
       li.firstChild.addEventListener('click', () => goTo(i));
       el.dots.appendChild(li);
     });
-    el.back.disabled = prevIndex(stepIndex) === -1;
-    const last = nextIndex(stepIndex) === -1;
-    el.next.textContent = last ? 'Review slip' : 'Next';
-  }
-
-  function nextIndex(i) {
-    for (let j = i + 1; j < STEPS.length; j++) if (!(STEPS[j].skip && STEPS[j].skip())) return j;
-    return -1;
-  }
-  function prevIndex(i) {
-    for (let j = i - 1; j >= 0; j--) if (!(STEPS[j].skip && STEPS[j].skip())) return j;
-    return -1;
+    el.back.disabled = stepIndex === 0;
+    if (step.sheet) {
+      el.next.textContent = 'Add to order';
+      el.next.disabled = piecesOf(draft) === 0;
+      el.next.classList.add('btn-red');
+      el.next.classList.remove('btn-ink');
+    } else {
+      el.next.textContent = 'Next';
+      el.next.disabled = false;
+      el.next.classList.add('btn-ink');
+      el.next.classList.remove('btn-red');
+    }
   }
 
   function goTo(i) {
     if (i < 0 || i >= STEPS.length) return;
-    if (STEPS[i].skip && STEPS[i].skip()) i = nextIndex(i) === -1 ? prevIndex(i) : nextIndex(i);
     const changed = i !== stepIndex;
     stepIndex = i;
+    if (STEPS[i].key === 'back') flipped = true;
+    if (STEPS[i].key === 'front' || STEPS[i].key === 'color') flipped = false;
+    renderShirt(false);
     renderStepCard();
     renderDisc(changed);
   }
@@ -290,13 +355,12 @@
 
   function onDishClick(e, btn, it) {
     if (suppressClick) { suppressClick = false; return; }
-    if (it.disabled) return;
     flyFrom(btn.querySelector('.plate'), () => choose(it.value));
   }
 
   function onDishPointerDown(e, btn, it) {
-    if (it.disabled || e.button !== 0) return;
-    if (e.pointerType === 'touch') return; // phones: tap only, so the strip can scroll
+    if (e.button !== 0) return;
+    if (e.pointerType === 'touch') return; // phones: tap only, so the page can scroll
     drag = { btn, it, x: e.clientX, y: e.clientY, active: false };
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp, { once: true });
@@ -327,7 +391,7 @@
     if (!drag) return;
     const d = drag;
     drag = null;
-    if (!d.active) return; // a plain click: the click handler does the work
+    if (!d.active) return;
     suppressClick = true;
     setTimeout(() => { suppressClick = false; }, 50);
     document.body.classList.remove('dragging');
@@ -337,7 +401,6 @@
       el.drop.classList.remove('hot');
       landGhost(() => choose(d.it.value));
     } else {
-      // Put it back on the table
       const r = d.btn.querySelector('.plate').getBoundingClientRect();
       el.ghost.style.transition = 'transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s';
       el.ghost.style.transform = `translate(${r.left + r.width / 2}px, ${r.top + r.height / 2}px) translate(-50%, -50%)`;
@@ -381,81 +444,121 @@
     el.ghost.style.transition = 'none';
     el.ghost.style.transform = `translate(${r.left + r.width / 2}px, ${r.top + r.height / 2}px) translate(-50%, -50%)`;
     el.ghost.classList.add('on');
-    void el.ghost.offsetWidth; // let the browser place the ghost before it flies
+    void el.ghost.offsetWidth;
     landGhost(done);
   }
 
   function choose(value) {
     const step = STEPS[stepIndex];
-    state[step.key] = value;
+    draft[step.key] = value;
+    notice = '';
 
-    // Changing the shirt can make a chosen size disappear
-    if (step.key === 'product' && state.size && !value.sizes.includes(state.size)) state.size = null;
-    // Plain or all-over prints do not need a placement
-    if (step.key === 'method' && (value.id === 'none' || value.id === 'sublimation')) state.placement = null;
-    if (step.key === 'method' && value.id !== 'none' && value.id !== 'sublimation' && !state.placement) {
-      state.placement = C.customServices.placements[0];
+    if (step.key === 'product') {
+      // A colour the new shirt does not come in, or sizes it does not have, are cleared
+      if (draft.color && !colorsFor(value).includes(draft.color)) draft.color = null;
+      Object.keys(draft.sizes).forEach(k => { if (!value.sizes.some(s => s.size === k)) delete draft.sizes[k]; });
     }
-    if (step.key === 'placement') flipped = value.id === 'back';
+    if (step.key === 'back') flipped = true;
+    if (step.key === 'front') flipped = false;
 
     renderShirt(true);
     renderSlip(step.key);
-    el.disc.querySelectorAll('.dish').forEach((d, i) => d.setAttribute('aria-selected', items[i].value === value ? 'true' : 'false'));
-
-    const n = nextIndex(stepIndex);
+    el.disc.querySelectorAll('.dish').forEach((d, i) => d.setAttribute('aria-selected', sameValue(step.key, items[i].value, value) ? 'true' : 'false'));
     renderStepCard();
-    if (n !== -1) {
-      setTimeout(() => goTo(n), reduceMotion ? 0 : 420);
-    } else {
-      el.send.classList.remove('ready');
-      void el.send.offsetWidth;
-      el.send.classList.add('ready');
-    }
+    setTimeout(() => goTo(stepIndex + 1), reduceMotion ? 0 : 420);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Adding, editing and removing items
+  // ---------------------------------------------------------------------------
+  function addToOrder() {
+    if (!piecesOf(draft)) return;
+    const item = {
+      id: nextId++,
+      product: draftProduct(),
+      color: draftColor(),
+      front: draft.front || PLAIN,
+      back: draft.back || PLAIN,
+      sizes: Object.assign({}, draft.sizes),
+    };
+    order.push(item);
+    // The next item keeps the same prints, so a second shirt style is quick
+    draft = blankDraft(item);
+    notice = `Added. The next shirt keeps the same prints (front: ${decoText(item.front)}; back: ${decoText(item.back)}). Change them at the Front and Back steps.`;
+    flipped = false;
+    stepIndex = 0;
+    renderShirt(true);
+    renderSlip();
+    renderStepCard();
+    renderDisc(true);
+    pulseSend();
+  }
+
+  function editItem(id) {
+    const i = order.findIndex(it => it.id === id);
+    if (i === -1) return;
+    const it = order.splice(i, 1)[0];
+    draft = { product: it.product, color: it.color, front: it.front, back: it.back, sizes: Object.assign({}, it.sizes) };
+    notice = '';
+    flipped = false;
+    renderShirt(true);
+    renderSlip();
+    goTo(STEPS.findIndex(s => s.key === 'sizes'));
+    document.getElementById('build').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+
+  function removeItem(id) {
+    const i = order.findIndex(it => it.id === id);
+    if (i > -1) order.splice(i, 1);
+    renderSlip();
+  }
+
+  function pulseSend() {
+    el.send.classList.remove('ready');
+    void el.send.offsetWidth;
+    el.send.classList.add('ready');
   }
 
   // ---------------------------------------------------------------------------
   // The shirt in the middle
   // ---------------------------------------------------------------------------
   function renderShirt(pop) {
-    const p = state.product || firstOrderable;
-    const color = (state.color || C.colors[0]).hex;
-    const opts = {
-      shape: p.shape,
-      color,
-      method: state.method ? (state.method.id === 'none' ? '' : state.method.id) : '',
-      placement: state.placement ? state.placement.id : (state.method && state.method.id === 'sublimation' ? 'front' : ''),
-      size: state.size ? state.size.size : '',
-    };
+    const p = draftProduct();
+    const color = draftColor().hex;
+    const opts = { shape: p.shape, color, front: decoDraw(draft.front), back: decoDraw(draft.back) };
     el.faceFront.innerHTML = Shirt.draw(Object.assign({ side: 'front' }, opts));
     el.faceBack.innerHTML = Shirt.draw(Object.assign({ side: 'back' }, opts));
 
     // Pick the backdrop colour that stands out most from the shirt
     const rgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
     const dist = (a, b) => { const x = rgb(a), y = rgb(b); return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]); };
-    const backdrops = ['#2952A3', '#F6C343', '#D32F2F'];
-    const stageColor = backdrops.find(b => dist(b, color) > 200) || '#F6C343';
+    const backdrops = ['#1436B4', '#F8C81C', '#E4032B'];
+    const stageColor = backdrops.find(b => dist(b, color) > 200) || '#F8C81C';
     el.drop.parentElement.style.setProperty('--stage', stageColor);
-    el.drop.parentElement.classList.toggle('on-dark', stageColor !== '#F6C343');
-
-    // Bigger sizes draw a bigger shirt
-    const w = state.size ? state.size.width : 40;
-    const fit = 0.74 + 0.26 * Math.min(1, Math.max(0, (w - 24) / 24));
-    el.drop.style.setProperty('--fit', fit.toFixed(3));
+    el.drop.parentElement.classList.toggle('on-dark', stageColor !== '#F8C81C');
 
     el.flipper.classList.toggle('flipped', flipped);
     el.flipBtn.textContent = flipped ? 'See the front' : 'See the back';
     el.flipBtn.setAttribute('aria-pressed', flipped ? 'true' : 'false');
 
     const bits = [p.shortName || p.name];
-    if (state.color) bits.push(state.color.name);
-    if (state.size) bits.push(/^\d+$/.test(state.size.size) ? 'Kids ' + state.size.size : 'Size ' + state.size.size);
+    if (draft.color) bits.push(draft.color.name);
+    const side = flipped ? draft.back : draft.front;
+    if (side) bits.push((flipped ? 'Back: ' : 'Front: ') + decoText(side));
     el.stageNote.textContent = bits.join(' · ');
 
-    if (state.qty) {
-      el.stamp.textContent = '× ' + pcs(state.qty);
-      el.stamp.classList.add('on');
+    const n = piecesOf(draft);
+    if (n) {
+      const text = '× ' + pcs(n);
+      if (el.stamp.textContent !== text || !el.stamp.classList.contains('on')) {
+        el.stamp.textContent = text;
+        el.stamp.classList.remove('on');
+        void el.stamp.offsetWidth;
+        el.stamp.classList.add('on');
+      }
     } else {
       el.stamp.classList.remove('on');
+      el.stamp.textContent = '';
     }
 
     if (pop && !reduceMotion) {
@@ -466,43 +569,88 @@
   }
 
   // ---------------------------------------------------------------------------
-  // The order slip
+  // The order slip: the item being built, then the order grouped by design
   // ---------------------------------------------------------------------------
+  function sizeLine(it) {
+    return it.product.sizes.filter(s => it.sizes[s.size]).map(s => `${s.size} × ${pcs(it.sizes[s.size])}`).join(', ');
+  }
+
+  function groups() {
+    const map = new Map();
+    order.forEach(it => {
+      const k = designKey(it);
+      if (!map.has(k)) map.set(k, { front: it.front, back: it.back, items: [] });
+      map.get(k).items.push(it);
+    });
+    return Array.from(map.values());
+  }
+  const designName = i => 'Design ' + String.fromCharCode(65 + (i % 26));
+
   function renderSlip(justSet) {
-    const p = state.product;
+    // 1. The item being built
     const rows = [
-      ['product', 'Shirt', p ? (p.shortName || p.name) : null],
-      ['color', 'Colour', state.color ? state.color.name : null],
-      ['size', 'Size', state.size ? `${state.size.size} · ${state.size.width}×${state.size.length} in` : null],
-      ['method', 'Print', state.method ? state.method.name : null],
-      ['placement', 'Placement',
-        state.method && state.method.id === 'none' ? 'None'
-          : state.method && state.method.id === 'sublimation' ? 'All over'
-          : state.placement ? state.placement.name : null],
-      ['qty', 'Quantity', state.qty ? pcs(state.qty) + ' pcs' : null],
+      ['product', 'Shirt', draft.product ? (draft.product.shortName || draft.product.name) : null],
+      ['color', 'Colour', draft.color ? draft.color.name : null],
+      ['front', 'Front', draft.front ? decoText(draft.front) : null],
+      ['back', 'Back', draft.back ? decoText(draft.back) : null],
+      ['sizes', 'Sizes', piecesOf(draft) ? `${sizeLine(Object.assign({}, draft, { product: draftProduct() }))}` : null],
     ];
-    el.lines.innerHTML = rows.map(([k, label, val]) =>
-      `<div class="line${val ? ' filled' : ''}${k === justSet ? ' just' : ''}">` +
-      `<dt><button type="button" data-step="${k}">${label}</button></dt><dd>${val || '—'}</dd></div>`
-    ).join('');
-    el.lines.querySelectorAll('button[data-step]').forEach(b => {
+    el.draftBox.innerHTML =
+      `<p class="slip-label">${order.length ? 'Next item' : 'Item 1'} <span>in progress</span></p>` +
+      `<dl class="slip-lines">` +
+      rows.map(([k, label, val]) =>
+        `<div class="line${val ? ' filled' : ''}${k === justSet ? ' just' : ''}">` +
+        `<dt><button type="button" data-step="${k}">${label}</button></dt><dd>${val ? esc(val) : '—'}</dd></div>`
+      ).join('') + `</dl>`;
+    el.draftBox.querySelectorAll('button[data-step]').forEach(b => {
       b.addEventListener('click', () => goTo(STEPS.findIndex(s => s.key === b.dataset.step)));
     });
 
-    const each = state.size ? state.size.price : null;
-    el.sumEach.textContent = each ? peso(each) : '—';
-    el.sumPrint.textContent = !state.method ? '—' : state.method.id === 'none' ? 'None' : 'Quoted';
-    const total = each && state.qty ? each * state.qty : 0;
-    el.sumTotal.textContent = peso(total);
-    el.sumDown.textContent = total ? peso(total * 0.3) : '—';
+    // 2. The order, one section per design (same front and back prints)
+    const gs = groups();
+    el.items.innerHTML = gs.map((g, gi) =>
+      `<section class="design">` +
+      `<h3 class="design-head"><span>${designName(gi)}</span><span class="design-deco">Front: ${esc(decoText(g.front))}<br>Back: ${esc(decoText(g.back))}</span></h3>` +
+      `<ul>` + g.items.map(it =>
+        `<li class="oi">` +
+        `<span class="oi-dot" style="--sw:${it.color.hex}" aria-hidden="true"></span>` +
+        `<span class="oi-main"><strong>${esc(it.product.shortName || it.product.name)}, ${esc(it.color.name)}</strong>` +
+        `<span class="oi-sizes">${esc(sizeLine(it))}</span>` +
+        `<span class="oi-acts"><button type="button" data-edit="${it.id}">Edit</button><button type="button" data-remove="${it.id}">Remove</button></span></span>` +
+        `<span class="oi-num"><strong>${pcs(piecesOf(it))}</strong> pcs<br>${peso(retailOf(it))}</span>` +
+        `</li>`
+      ).join('') + `</ul></section>`
+    ).join('');
+    el.items.hidden = gs.length === 0;
+    el.items.closest('.slip').classList.toggle('has-items', gs.length > 0);
+    el.items.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => editItem(Number(b.dataset.edit))));
+    el.items.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => removeItem(Number(b.dataset.remove))));
 
-    const prod = p || firstOrderable;
-    let fine = prod.effectivityDate ? `Shirt prices as of ${prod.effectivityDate}. ` : '';
-    fine += prod.paymentTerms || '';
-    if (state.method && state.method.id !== 'none') fine += ' Print and embroidery are quoted separately.';
-    el.fine.textContent = fine;
+    // 3. The sums (added items only)
+    const total = order.reduce((a, it) => a + piecesOf(it), 0);
+    const retail = order.reduce((a, it) => a + retailOf(it), 0);
+    const tier = tierFor(total);
+    const disc = tier ? tier.off * total : 0;
+    const decorated = order.some(it => it.front.key !== 'plain' || it.back.key !== 'plain');
+    el.sumPcs.textContent = total ? pcs(total) : '—';
+    el.sumRetail.textContent = total ? peso(retail) : '—';
+    el.sumDiscLabel.textContent = tier ? `Bulk discount, ${peso(tier.off)} off each` : 'Bulk discount (from 6 pcs)';
+    el.sumDiscLabel.title = tier ? tierText(tier) : '';
+    el.sumDisc.textContent = disc ? '−' + peso(disc) : '—';
+    el.sumPrint.textContent = !total ? '—' : decorated ? 'Quoted' : 'None';
+    el.sumTotal.textContent = peso(retail - disc);
+    el.sumDown.textContent = total ? peso((retail - disc) * 0.3) : '—';
 
-    drawBarcode([rows.map(r => r[2]).join('|')].join(''));
+    const dates = Array.from(new Set(order.concat([{ product: draftProduct() }]).map(it => it.product.effectivityDate).filter(Boolean)));
+    let fine = dates.length ? `Prices effective ${dates.join(', ')}. ` : '';
+    fine += (C.paymentTerms || '') + ' ';
+    if (decorated || (draft.front && draft.front.key !== 'plain') || (draft.back && draft.back.key !== 'plain')) fine += 'Prints and embroidery are quoted per design. ';
+    fine += C.priceNote || '';
+    el.fine.textContent = fine.trim();
+
+    el.send.disabled = total === 0 && piecesOf(draft) === 0;
+    el.send.textContent = total === 0 && piecesOf(draft) > 0 ? 'Add and send this order' : 'Send this order';
+    drawBarcode(order.map(it => it.id + designKey(it) + sizeLine(it)).join('|') + JSON.stringify(draft.sizes));
   }
 
   function drawBarcode(seed) {
@@ -521,33 +669,36 @@
   }
 
   function orderSummary() {
-    const lines = [];
-    const p = state.product || firstOrderable;
-    lines.push('Order from the website builder:');
-    lines.push('Shirt: ' + p.name);
-    if (state.color) lines.push('Colour: ' + state.color.name);
-    if (state.size) lines.push(`Size: ${state.size.size} (${state.size.width} x ${state.size.length} in) at ${peso(state.size.price)} per piece`);
-    if (state.method) lines.push('Print: ' + state.method.name);
-    if (state.placement && state.method && state.method.id !== 'none') lines.push('Placement: ' + state.placement.name);
-    if (state.qty) lines.push('Quantity: ' + pcs(state.qty) + ' pcs');
-    if (state.size && state.qty) lines.push('Estimated shirt total: ' + peso(state.size.price * state.qty));
-    return lines.join('\n');
+    const out = ['Order from the website builder:', ''];
+    groups().forEach((g, gi) => {
+      out.push(`${designName(gi)} (front: ${decoText(g.front)}; back: ${decoText(g.back)})`);
+      g.items.forEach(it => {
+        out.push(`  - ${it.product.name}, ${it.color.name}: ${sizeLine(it)} (${pcs(piecesOf(it))} pcs, ${peso(retailOf(it))})`);
+      });
+      out.push('');
+    });
+    const total = order.reduce((a, it) => a + piecesOf(it), 0);
+    const retail = order.reduce((a, it) => a + retailOf(it), 0);
+    const tier = tierFor(total);
+    out.push(`Total: ${pcs(total)} pcs, ${peso(retail)} before discount`);
+    if (tier) out.push(`Bulk discount: ${peso(tier.off)} off each (${tierText(tier)}), estimated ${peso(retail - tier.off * total)}`);
+    out.push('Please quote the prints and embroidery. I will send the artwork.');
+    return out.join('\n');
   }
 
   // ---------------------------------------------------------------------------
   // Builder setup
   // ---------------------------------------------------------------------------
   function initBuilder() {
-    el.back.addEventListener('click', () => goTo(prevIndex(stepIndex)));
+    el.back.addEventListener('click', () => goTo(stepIndex - 1));
     el.next.addEventListener('click', () => {
-      const n = nextIndex(stepIndex);
-      if (n === -1) { el.send.focus(); el.send.classList.add('ready'); }
-      else goTo(n);
+      if (STEPS[stepIndex].sheet) addToOrder();
+      else goTo(stepIndex + 1);
     });
     $('#spin-up').addEventListener('click', () => setRot(rot + SPACING));
     $('#spin-down').addEventListener('click', () => setRot(rot - SPACING));
     el.discWrap.addEventListener('wheel', e => {
-      if (isMobile()) return;
+      if (isMobile() || STEPS[stepIndex].sheet) return;
       const l = rotLimits();
       if (l.min === l.max) return;
       e.preventDefault();
@@ -556,8 +707,9 @@
 
     el.flipBtn.addEventListener('click', () => { flipped = !flipped; renderShirt(false); });
     el.send.addEventListener('click', () => {
-      const msg = $('#f-message');
-      msg.value = orderSummary();
+      if (!order.length && piecesOf(draft)) addToOrder();
+      if (!order.length) return;
+      $('#f-message').value = orderSummary();
       document.getElementById('contact').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
       setTimeout(() => $('#f-name').focus({ preventScroll: true }), reduceMotion ? 0 : 600);
     });
@@ -570,103 +722,106 @@
   }
 
   // Lets other sections jump into the builder with choices made
-  function presetBuilder(changes, step) {
-    Object.assign(state, changes);
+  function presetBuilder(changes, stepKey) {
+    Object.assign(draft, changes);
+    if (draft.color && !colorsFor(draftProduct()).includes(draft.color)) draft.color = null;
+    notice = '';
     renderShirt(true);
     renderSlip();
-    goTo(STEPS.findIndex(s => s.key === step));
+    goTo(STEPS.findIndex(s => s.key === stepKey));
     document.getElementById('build').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
   }
 
   // ---------------------------------------------------------------------------
-  // Price list
+  // Price list (one tab per shirt)
   // ---------------------------------------------------------------------------
   function initPrices() {
-    const p = firstOrderable;
-    $('#price-sub').textContent = `${p.name}. Price per piece.`;
-    const kids = p.sizes.filter(s => /^\d+$/.test(s.size));
-    const adults = p.sizes.filter(s => !/^\d+$/.test(s.size));
-    const groups = [];
-    if (kids.length) groups.push(['Kids', kids]);
-    if (adults.length) groups.push(['Adults', adults]);
-
-    $('#price-groups').innerHTML = groups.map(([name, list]) =>
-      `<div class="price-group"><h3>${name}</h3><ul>` +
-      list.map(s =>
-        `<li><button type="button" class="price-row" data-size="${s.size}">` +
-        `<span class="pr-name">${name === 'Kids' ? 'Size ' : ''}${s.size}</span><span class="pr-lead" aria-hidden="true"></span>` +
-        `<span class="pr-val">${peso(s.price)}</span>` +
-        `<span class="pr-desc">${s.width} in wide, ${s.length} in long</span></button></li>`
-      ).join('') + `</ul></div>`
-    ).join('');
-
-    const terms = [
-      ['Minimum order', pcs(p.minimumOrder) + ' pieces'],
-      ['Payment', p.paymentTerms],
-      ['Prices effective', p.effectivityDate],
-    ].filter(t => t[1]);
-    $('#terms').innerHTML = terms.map(t => `<div><dt>${t[0]}</dt><dd>${t[1]}</dd></div>`).join('');
+    let prod = products[0];
+    const tabs = $('#price-tabs');
+    tabs.innerHTML = products.map(p => `<button type="button" role="tab" data-id="${p.id}">${esc(p.shortName || p.name)}</button>`).join('');
 
     const showMeasure = s => {
       $('#measure-size').textContent = s.size;
-      $('#measure-text').textContent = `${s.width} in across the chest, ${s.length} in long. ${peso(s.price)} a piece.`;
-      const fit = 0.7 + 0.3 * Math.min(1, Math.max(0, (s.width - 24) / 24));
+      $('#measure-text').textContent = `${s.width} in across the chest, ${s.length} in long. ${peso(s.white)} white, ${peso(s.colored)} coloured.`;
+      const max = Math.max.apply(null, prod.sizes.map(x => x.width));
+      const min = Math.min.apply(null, prod.sizes.map(x => x.width));
+      const fit = 0.78 + 0.22 * (max === min ? 1 : (s.width - min) / (max - min));
       $('#measure-shirt').style.setProperty('--fit', fit.toFixed(3));
     };
-    $('#measure-shirt').innerHTML = Shirt.measured('#F7F5F0');
-    showMeasure(p.sizes.find(s => s.size === 'M') || p.sizes[0]);
 
-    document.querySelectorAll('.price-row').forEach(btn => {
-      const s = p.sizes.find(x => x.size === btn.dataset.size);
-      btn.addEventListener('mouseenter', () => showMeasure(s));
-      btn.addEventListener('focus', () => showMeasure(s));
-      btn.addEventListener('click', () => {
-        showMeasure(s);
-        presetBuilder({ product: p, size: s }, 'method');
+    const draw = () => {
+      tabs.querySelectorAll('[role=tab]').forEach(t => t.setAttribute('aria-selected', t.dataset.id === prod.id ? 'true' : 'false'));
+      $('#price-sub').textContent = `${prod.name}. ${prod.gsm} GSM, ${prod.fabric}. Retail price per piece.`;
+      $('#price-groups').innerHTML =
+        `<div class="pt-head" aria-hidden="true"><span>Size</span><span>Chest × length</span><span>White</span><span>Coloured</span></div>` +
+        prod.sizes.map(s =>
+          `<button type="button" class="price-row" data-size="${esc(s.size)}" aria-label="Size ${esc(s.size)}, ${s.width} by ${s.length} inches, ${peso(s.white)} white, ${peso(s.colored)} coloured. Build this shirt.">` +
+          `<span class="pr-name">${esc(s.size)}</span><span class="pr-desc">${s.width} × ${s.length} in</span>` +
+          `<span class="pr-val">${peso(s.white)}</span><span class="pr-val pr-col">${peso(s.colored)}</span></button>`
+        ).join('');
+      $('#measure-shirt').innerHTML = Shirt.measured('#F4F2EE', prod.shape);
+      showMeasure(prod.sizes.find(s => s.size === 'M') || prod.sizes[0]);
+      document.querySelectorAll('.price-row').forEach(btn => {
+        const s = prod.sizes.find(x => x.size === btn.dataset.size);
+        btn.addEventListener('mouseenter', () => showMeasure(s));
+        btn.addEventListener('focus', () => showMeasure(s));
+        btn.addEventListener('click', () => {
+          showMeasure(s);
+          presetBuilder({ product: prod }, 'color');
+        });
       });
-    });
+      $('#terms').innerHTML = [
+        ['Payment', C.paymentTerms],
+        ['Prices effective', prod.effectivityDate],
+        ['Prints & embroidery', 'Custom printing available. Request a quote.'],
+      ].filter(t => t[1]).map(t => `<div><dt>${esc(t[0])}</dt><dd>${esc(t[1])}</dd></div>`).join('');
+    };
+
+    $('#bulk').innerHTML =
+      `<h3>Bulk discount</h3><ul>` +
+      C.bulkDiscounts.map(t => `<li><span class="bk-off">${peso(t.off)}</span><span class="bk-txt">off each, ${tierText(t)}</span></li>`).join('') +
+      `</ul><p>Counted on every piece in the order, tees and polos together.</p>`;
+
+    tabs.querySelectorAll('[role=tab]').forEach(t => t.addEventListener('click', () => {
+      prod = products.find(p => p.id === t.dataset.id); draw();
+    }));
+    draw();
   }
 
   // ---------------------------------------------------------------------------
   // Line-up (shirts and colours)
   // ---------------------------------------------------------------------------
   function initLineup() {
-    let prod = firstOrderable;
+    let prod = products[0];
     let color = C.colors.find(c => c.name.toLowerCase().includes('red')) || C.colors[0];
     const tabs = $('#lineup-tabs');
     const draw = () => {
+      const list = colorsFor(prod);
+      if (!list.includes(color)) color = list[0];
       $('#plate-shirt').innerHTML = Shirt.draw({ shape: prod.shape, color: color.hex });
-      $('#plate-shirt').parentElement.style.setProperty('--plate', color.hex);
       $('#plate-shirt').parentElement.classList.toggle('plate-light', Shirt.isLight(color.hex));
-      $('#lineup-name').textContent = prod.name;
-      $('#lineup-desc').textContent = prod.orderable
-        ? prod.description + ' Sizes ' + prod.sizes[0].size + ' to ' + prod.sizes[prod.sizes.length - 1].size +
-          ', from ' + peso(Math.min.apply(null, prod.sizes.map(s => s.price))) + ' a piece.'
-        : 'Coming soon. Ask us about it when you send your inquiry.';
+      $('#lineup-name').textContent = `${prod.name} · ${prod.line} · ${prod.gsm} GSM`;
+      $('#lineup-desc').textContent = `${prod.fabric.charAt(0).toUpperCase() + prod.fabric.slice(1)}. Sizes ${prod.sizes[0].size} to ${prod.sizes[prod.sizes.length - 1].size}, from ${peso(lowest(prod))} a piece.`;
+      $('#lineup-features').innerHTML = prod.features.map(f => `<li>${esc(f)}</li>`).join('');
       $('#swatch-name').textContent = color.name;
-      $('#lineup-build').textContent = prod.orderable ? 'Build this shirt' : 'Ask about it';
-      $('#lineup-build').setAttribute('href', prod.orderable ? '#build' : '#contact');
+      $('#lineup-spec').setAttribute('href', prod.photo);
       tabs.querySelectorAll('[role=tab]').forEach(t => t.setAttribute('aria-selected', t.dataset.id === prod.id ? 'true' : 'false'));
-      $('#swatches').querySelectorAll('[role=radio]').forEach(r => r.setAttribute('aria-checked', r.dataset.name === color.name ? 'true' : 'false'));
+      $('#swatches').innerHTML = list.map(c =>
+        `<button type="button" role="radio" data-name="${esc(c.name)}" style="--sw:${c.hex}" aria-label="${esc(c.name)}" aria-checked="${c === color ? 'true' : 'false'}"></button>`
+      ).join('');
+      $('#swatches').querySelectorAll('[role=radio]').forEach(r => {
+        r.addEventListener('click', () => { color = C.colors.find(c => c.name === r.dataset.name); draw(); });
+        r.addEventListener('mouseenter', () => { $('#swatch-name').textContent = r.dataset.name; });
+        r.addEventListener('mouseleave', () => { $('#swatch-name').textContent = color.name; });
+      });
     };
-    tabs.innerHTML = products.map(p =>
-      `<button type="button" role="tab" data-id="${p.id}">${p.shortName || p.name}${p.orderable ? '' : ' <span class="soon-mark">soon</span>'}</button>`
-    ).join('');
+    tabs.innerHTML = products.map(p => `<button type="button" role="tab" data-id="${p.id}">${esc(p.shortName || p.name)}</button>`).join('');
     tabs.querySelectorAll('[role=tab]').forEach(t => t.addEventListener('click', () => {
       prod = products.find(p => p.id === t.dataset.id); draw();
     }));
-    $('#swatches').innerHTML = C.colors.map(c =>
-      `<button type="button" role="radio" data-name="${c.name}" style="--sw:${c.hex}" aria-label="${c.name}"></button>`
-    ).join('');
-    $('#swatches').querySelectorAll('[role=radio]').forEach(r => {
-      r.addEventListener('click', () => { color = C.colors.find(c => c.name === r.dataset.name); draw(); });
-      r.addEventListener('mouseenter', () => { $('#swatch-name').textContent = r.dataset.name; });
-      r.addEventListener('mouseleave', () => { $('#swatch-name').textContent = color.name; });
-    });
     $('#lineup-build').addEventListener('click', e => {
-      if (!prod.orderable) return;
       e.preventDefault();
-      presetBuilder({ product: prod, color: color }, 'size');
+      presetBuilder({ product: prod, color: color }, 'front');
     });
     draw();
   }
@@ -677,22 +832,20 @@
   function initPrints() {
     $('#prints-desc').textContent = C.customServices.description;
     const list = $('#methods');
-    const fabricColor = '#F7F5F0';
     const show = m => {
-      $('#fabric').innerHTML = Shirt.fabric(m.id, m.id === 'embroidery' ? '#1F2A4A' : fabricColor);
+      $('#fabric').innerHTML = Shirt.fabric(m.id, m.id === 'embroidery' ? '#18204F' : '#F4F2EE');
       list.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === m.id ? 'true' : 'false'));
     };
-    const real = methods.filter(m => m.id !== 'none');
-    list.innerHTML = real.map(m =>
-      `<li><button type="button" data-id="${m.id}" aria-pressed="false"><span class="m-name">${m.name}</span><span class="m-note">${m.note}</span></button></li>`
+    list.innerHTML = methods.map(m =>
+      `<li><button type="button" data-id="${m.id}" aria-pressed="false"><span class="m-name">${esc(m.name)}</span><span class="m-note">${esc(m.long !== m.name ? m.long + '. ' : '')}${esc(m.note)}</span></button></li>`
     ).join('');
     list.querySelectorAll('button').forEach(b => {
-      const m = real.find(x => x.id === b.dataset.id);
+      const m = methods.find(x => x.id === b.dataset.id);
       b.addEventListener('mouseenter', () => show(m));
       b.addEventListener('focus', () => show(m));
       b.addEventListener('click', () => show(m));
     });
-    if (real.length) show(real[0]);
+    if (methods.length) show(methods[0]);
   }
 
   // ---------------------------------------------------------------------------
@@ -702,12 +855,10 @@
     // Brand
     $('#hero-tagline').textContent = C.brand.tagline;
     $('#hero-description').textContent = C.brand.description;
+    $('#brand-name').textContent = C.brand.name;
     if (isSet(C.brand.logo)) {
       const img = $('#logo-img');
-      img.src = C.brand.logo; img.alt = C.brand.name; img.hidden = false;
-      $('#brand-name').hidden = true;
-    } else {
-      $('#brand-name').textContent = C.brand.name;
+      img.src = C.brand.logo; img.hidden = false;
     }
 
     // Why
@@ -753,6 +904,7 @@
     // Footer
     $('#year').textContent = new Date().getFullYear();
     $('#copyright').textContent = C.footer.copyrightText;
+    if (C.footer.statement) $('#footer-statement').textContent = C.footer.statement;
     const social = $('#footer-social');
     const links = [];
     if (isSet(k.instagram)) links.push(`<a href="${k.instagram}" target="_blank" rel="noopener noreferrer">Instagram</a>`);
@@ -774,7 +926,7 @@
   // Entrances as sections scroll in
   // ---------------------------------------------------------------------------
   function initReveal() {
-    const targets = document.querySelectorAll('main > section:not(.builder) h2, main > section:not(.builder) p, .price-group, .terms, .measure, .lineup-plate, .tabs, .swatches, .cells, .swatch-big, .methods li, .prints-photo, .why-photo, .facts li, .coupon');
+    const targets = document.querySelectorAll('main > section:not(.builder) h2, main > section:not(.builder) p, .price-group, .terms, .measure, .lineup-plate, .tabs, .swatches, .cells, .swatch-big, .methods li, .prints-photo, .why-photo, .facts li, .coupon, .bulk');
     if (reduceMotion || !('IntersectionObserver' in window)) return;
     document.documentElement.classList.add('js-reveal');
     const io = new IntersectionObserver(entries => {

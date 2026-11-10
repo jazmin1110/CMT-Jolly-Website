@@ -29,45 +29,37 @@ All editable content is in one file: **`content.js`**
 |---------|--------------|
 | **Brand** | Name, the big first-screen line, the sentence under it, logo |
 | **Contact** | Phone, email, address, hours, social links, Formspree form ID |
-| **Products** | Names, descriptions, sizes, measurements, prices, minimum order, terms |
-| **Colors** | The shirt colours offered in the builder (name + colour code) |
-| **Custom Services** | Print/embroidery methods and the print placements |
-| **Quantities** | The order sizes offered in the builder's last step |
+| **Products** | The tee and the polo: names, GSM, fabric, features, sizes, measurements, white and coloured prices, which colours each comes in |
+| **Bulk discounts** | The ₱-off-per-piece tiers (6–119, 120–599, 600–1,199, 1,200+) |
+| **Colors** | The Jolly Color Collection (name + colour code for the drawings) |
+| **Custom Services** | DTF, DTG and embroidery, and where they can sit on the front and back |
 | **About** | "Why Jolly" sentence and the four big figures |
+| **Footer** | The footer sentence and copyright |
 
 Anything still written like `[THIS]` is hidden on the site until you fill it in.
 
 ### How the site works
 
-The first screen is an **order builder**: visitors drag (or tap) choices from the turning
-table onto the shirt, and the order slip on the right adds up the price per piece, the
-estimated total and the 30% downpayment. "Send this order" copies the order into the
+The first screen is an **order builder**. Visitors drag (or tap) choices from the turning
+table onto the shirt: the shirt, the colour, the front print, the back print (each side
+can use a different method: DTF, DTG or embroidery), then a quantity for every size.
+"Add to order" puts the item on the order slip, and the next item keeps the same prints,
+so a tee and a polo with the same logo take seconds. The slip groups items by design
+(the same front and back prints), applies the bulk discount on the whole order, and adds
+up the total and the 30% downpayment. "Send this order" copies everything into the
 inquiry form at the bottom.
 
-The shirts are drawn in code (`shirt.js`), so every colour in `content.js` works without
-photos. Real product photos can replace the drawings later.
+The shirts in the builder are drawn in code (`shirt.js`), so every colour works without a
+photo of each one. The real product photos, catalogue sheets and logo from the Jolly
+Google Drive folder are in `assets/jolly/`.
 
 ---
 
 ## How to Add/Update Images
 
-### Step 1: Prepare Your Images
-- **Logo**: 200x60 pixels, PNG with transparent background
-- **Product images**: 600x600 pixels, JPG or PNG
-- **Custom samples**: 400x400 pixels, JPG or PNG
-
-### Step 2: Add to the `/images/` folder
-Put your images in the `images` folder with these exact filenames:
-- `jolly-logo.png` (your logo)
-- `product-1.jpg` (first product)
-- `product-2.jpg`, `product-3.jpg` (additional products)
-- `custom-sample-1.jpg` through `custom-sample-4.jpg`
-
-### Step 3: Update content.js (if using different filenames)
-```javascript
-// In content.js, change the image path:
-image: "images/your-filename.jpg",
-```
+Put new pictures in `assets/jolly/` and point to them from `content.js` (the logo and
+each product's `photo`) or `index.html` (the photos in the poster wall and Why Jolly).
+Keep photos under about 1,800 pixels wide so the page stays fast.
 
 ---
 
@@ -76,27 +68,9 @@ image: "images/your-filename.jpg",
 1. Open `content.js`
 2. Find the `products: [` section
 3. Copy an existing product block (everything between `{` and `},`)
-4. Paste it after the last product
-5. Edit the details
+4. Paste it after the last product, give it a new `id`, and edit the details
+5. `shape` picks the drawing: `"tee"` or `"polo"`
 6. Save and refresh
-
-Example:
-```javascript
-{
-  name: "V-Neck T-Shirt",
-  description: "Comfortable V-neck design.",
-  image: "images/product-4.jpg",
-  minimumOrder: "100,000 pcs",
-  paymentTerms: "30% down, balance on delivery",
-  effectivityDate: "04/01/2026",
-  sizes: [
-    { size: "S", width: 40, length: 26, price: 175 },
-    { size: "M", width: 42, length: 27, price: 185 },
-    // ... more sizes
-  ],
-  isActive: true,
-},
-```
 
 ---
 
@@ -106,11 +80,7 @@ The form currently opens the user's email app (mailto link). To use Formspree in
 
 1. Go to [formspree.io](https://formspree.io) and create a free account
 2. Create a new form and copy your form ID
-3. In `index.html`, find this line:
-   ```html
-   action="https://formspree.io/f/[YOUR-FORM-ID]"
-   ```
-4. Replace `[YOUR-FORM-ID]` with your actual ID (e.g., `xabcdefg`)
+3. In `content.js`, paste the ID into `formspreeId` (e.g. `"xabcdefg"`)
 
 ---
 
@@ -122,13 +92,10 @@ CMT-Jolly-Website/
 ├── styles.css      # Styling (don't edit unless you know CSS)
 ├── script.js       # Functionality (don't edit unless you know JavaScript)
 ├── shirt.js        # Draws the shirts and print samples
-├── assets/         # Credited photos (cotton, thread, Manila street)
+├── assets/
+│   ├── jolly/      # ✅ Jolly's own photos, catalogue sheets and logo
+│   └── ...         # Credited photos (cotton, thread)
 ├── content.js      # ✅ EDIT THIS FILE for all content changes
-├── images/         # ✅ PUT YOUR IMAGES HERE
-│   ├── jolly-logo.png
-│   ├── product-1.jpg
-│   ├── product-2.jpg
-│   └── ...
 └── README.md       # This file
 ```
 
@@ -149,10 +116,11 @@ Upload all files to your web hosting provider.
 ## Color Scheme
 
 The site uses these colors (defined in `styles.css`):
-- **Primary Red**: #D32F2F
-- **Dark Charcoal**: #2D2D2D
-- **Light Gray**: #F5F5F5
-- **White**: #FFFFFF
+- **Jolly red**: #D8022A
+- **Jolly blue**: #1436B4
+- **Jolly yellow**: #F8C81C
+- **Cream paper**: #FDF3E7
+- **Ink**: #1E1E1E
 
 To change colors, edit the CSS variables at the top of `styles.css`.
 

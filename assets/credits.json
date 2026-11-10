@@ -1,27 +1,5 @@
 [
  {
-  "file": "assets/cotton-boll-nearly-ready-for-harvest.jpg",
-  "media": "image",
-  "ref": "commons:37045493",
-  "title": "Cotton boll nearly ready for harvest",
-  "creator": "Michael Bass-Deschenes (Commons User Mike Bass-Deschênes )",
-  "creatorUrl": null,
-  "date": "25 November 2014, 11:01",
-  "license": "CC BY 2.0",
-  "licenseCode": "by",
-  "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
-  "creditRequired": true,
-  "page": "https://commons.wikimedia.org/wiki/File:Cotton_boll_nearly_ready_for_harvest.jpg",
-  "via": "Wikimedia Commons",
-  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c5/Cotton_boll_nearly_ready_for_harvest.jpg/1920px-Cotton_boll_nearly_ready_for_harvest.jpg",
-  "width": 1920,
-  "height": 1280,
-  "bytes": 239687,
-  "credit": "\"Cotton boll nearly ready for harvest\" by Michael Bass-Deschenes (Commons User Mike Bass-Deschênes ), CC BY 2.0, via Wikimedia Commons",
-  "notes": [],
-  "saved": "2026-11-10T07:03:14.144Z"
- },
- {
   "file": "assets/cotton-03.jpg",
   "media": "image",
   "ref": "commons:25269803",
@@ -46,28 +24,6 @@
   "saved": "2026-11-10T07:03:15.893Z"
  },
  {
-  "file": "assets/spools-white-cotton-threads-machine.webp",
-  "media": "image",
-  "ref": "openverse:34aea80b-d0a0-4c49-bcc9-76f252e4f0bf",
-  "title": "Spools white cotton threads machine",
-  "creator": null,
-  "creatorUrl": null,
-  "date": null,
-  "license": "CC0",
-  "licenseCode": "cc0",
-  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-  "creditRequired": false,
-  "page": "https://www.rawpixel.com/image/3301367/free-photo-image-fashion-fabric-machine-spool",
-  "via": "rawpixel",
-  "image": "https://images.rawpixel.com/editor_1024/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvdXB3azYxODQ0OTQxLXdpa2ltZWRpYS1pbWFnZS1rb3dwcWZzMy5qcGc.jpg",
-  "width": 1024,
-  "height": 684,
-  "bytes": 197510,
-  "credit": "\"Spools white cotton threads machine\", CC0, via rawpixel",
-  "notes": [],
-  "saved": "2026-11-10T07:03:25.554Z"
- },
- {
   "file": "assets/wooden-spools-of-sewing-thread-in-different.jpg",
   "media": "image",
   "ref": "openverse:aec12d3d-2c46-416f-9d94-8e4f9097db7f",
@@ -90,29 +46,5 @@
    "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence."
   ],
   "saved": "2026-11-10T07:03:40.309Z"
- },
- {
-  "file": "assets/old-santa-mesa-street-jeepneys-manila-06.jpg",
-  "media": "image",
-  "ref": "openverse:2dc1a576-ac58-4988-a71f-5221fd85dc32",
-  "title": "Old Santa Mesa Street jeepneys (Manila; 06-18-2023)",
-  "creator": "Patrickroque01",
-  "creatorUrl": null,
-  "date": null,
-  "license": "CC BY-SA 4.0",
-  "licenseCode": "by-sa",
-  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
-  "creditRequired": true,
-  "page": "https://commons.wikimedia.org/w/index.php?curid=135292506",
-  "via": "Wikimedia Commons",
-  "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Old_Santa_Mesa_Street_jeepneys_%28Manila%3B_06-18-2023%29.jpg/1920px-Old_Santa_Mesa_Street_jeepneys_%28Manila%3B_06-18-2023%29.jpg",
-  "width": 1920,
-  "height": 1440,
-  "bytes": 876520,
-  "credit": "\"Old Santa Mesa Street jeepneys (Manila; 06-18-2023)\" by Patrickroque01, CC BY-SA 4.0, via Wikimedia Commons",
-  "notes": [
-   "Share-alike: an altered version (recoloured, combined with other pictures) must be shared under the same licence."
-  ],
-  "saved": "2026-11-10T07:03:45.731Z"
  }
 ]
