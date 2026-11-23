@@ -42,18 +42,6 @@
          ==================================================================== -->
     <section class="builder" id="build" aria-labelledby="build-title">
 
-      <!-- Poster wall behind the builder (decoration only) -->
-      <div class="wall" aria-hidden="true">
-        <div class="poster p-red"></div>
-        <div class="poster p-yellow"></div>
-        <div class="poster p-blue"></div>
-        <div class="poster p-photo"><img src="assets/jolly/rail-03.jpg" alt="" width="1800" height="1013"></div>
-        <div class="poster p-paper"></div>
-        <div class="poster p-red2"></div>
-        <div class="poster p-yellow2"></div>
-        <div class="poster p-blue2"></div>
-      </div>
-
       <div class="builder-head">
         <h1 id="build-title"><span id="hero-tagline">Your everyday, made Jolly.</span></h1>
         <p class="lead" id="hero-description">Premium cotton tees and polos. Build your order: shirt, colour, front and back prints, sizes.</p>
@@ -61,39 +49,38 @@
 
       <div class="builder-grid">
 
-        <!-- LEFT: the turning table -->
-        <div class="table-side">
-          <div class="disc-wrap" id="disc-wrap">
-            <div class="disc" id="disc" role="listbox" aria-labelledby="step-question">
-              <!-- Choices are placed here by script.js -->
+        <!-- LEFT: the choices, one step at a time -->
+        <div class="picker">
+          <ol class="steps" id="steps" aria-label="Steps">
+            <!-- Filled by script.js: one tab per step with what is chosen -->
+          </ol>
+
+          <div class="picker-body" aria-live="polite">
+            <div class="picker-q">
+              <h2 id="step-question">Pick a shirt</h2>
+              <p id="step-hint">Tap to choose. The shirt updates as you go.</p>
             </div>
+            <!-- The choices for this step (filled by script.js) -->
+            <div class="options" id="options" role="listbox" aria-labelledby="step-question"></div>
+            <!-- Last step: a quantity for every size (filled by script.js) -->
+            <div class="size-sheet" id="size-sheet" hidden></div>
           </div>
 
-          <div class="disc-spin">
-            <button class="spin" id="spin-up" type="button" aria-label="Turn the table up">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15l7-7 7 7" /></svg>
-            </button>
-            <button class="spin" id="spin-down" type="button" aria-label="Turn the table down">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7" /></svg>
-            </button>
-          </div>
-
-          <!-- Last step: a quantity for every size (filled by script.js) -->
-          <div class="size-sheet" id="size-sheet"></div>
-
-          <div class="step-card" aria-live="polite">
-            <ol class="dots" id="dots" aria-label="Progress"></ol>
-            <h2 id="step-question">Pick a shirt</h2>
-            <p id="step-hint">Tap one, or drag it onto the shirt.</p>
-            <div class="step-nav">
-              <button class="btn btn-ghost" id="step-back" type="button">Back</button>
-              <button class="btn btn-ink" id="step-next" type="button">Next</button>
-            </div>
+          <div class="picker-nav">
+            <button class="btn btn-ghost" id="step-back" type="button">Back</button>
+            <button class="btn btn-ink" id="step-next" type="button">Next</button>
           </div>
         </div>
 
         <!-- MIDDLE: the shirt -->
         <div class="stage">
+          <div class="stage-top">
+            <p class="stage-note" id="stage-note">Round neck · 100% cotton</p>
+            <div class="side-toggle" role="group" aria-label="Which side to show">
+              <button type="button" id="show-front" aria-pressed="true">Front</button>
+              <button type="button" id="show-back" aria-pressed="false">Back</button>
+            </div>
+          </div>
           <div class="shirt-drop" id="shirt-drop" aria-label="Your shirt">
             <div class="flipper" id="flipper">
               <div class="face face-front" id="face-front"></div>
@@ -101,23 +88,19 @@
             </div>
             <div class="stamp" id="stamp" aria-hidden="true"></div>
           </div>
-          <div class="stage-foot">
-            <p class="stage-note" id="stage-note">Round neck · 100% cotton</p>
-            <button class="btn btn-paper" id="flip-btn" type="button" aria-pressed="false">See the back</button>
-          </div>
           <!-- The customer's own design (stays in the browser) -->
           <div class="art-bar">
             <div class="art-row">
-              <label class="btn btn-ink art-up">
+              <label class="btn btn-paper art-up">
                 <input type="file" id="art-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="sr">
-                <span id="art-up-text">Add your design to the front</span>
+                <span id="art-up-text">Upload your design</span>
               </label>
               <div class="art-tools" id="art-tools" hidden>
                 <label for="art-size">Size</label>
                 <input type="range" id="art-size" min="30" max="100" step="1" value="85">
                 <button type="button" class="art-remove" id="art-remove">Remove</button>
               </div>
-              <button type="button" class="btn btn-paper art-mock" id="mockup-btn">Download mockup</button>
+              <button type="button" class="art-mock" id="mockup-btn">Download mockup</button>
             </div>
             <p class="art-hint" id="art-hint">PNG with a clear background works best. Your file stays on your device.</p>
             <p class="art-status" id="art-status" role="status"></p>
@@ -143,7 +126,6 @@
           </div>
           <p class="slip-nudge" id="slip-nudge" role="status"></p>
           <p class="slip-fine" id="slip-fine"></p>
-          <svg class="barcode" id="barcode" viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true"></svg>
           <button class="btn btn-red btn-block" id="send-order" type="button">Send this order</button>
           <button class="slip-clear" id="clear-order" type="button" hidden>Clear the slip</button>
         </aside>

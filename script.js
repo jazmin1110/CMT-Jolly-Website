@@ -133,10 +133,10 @@
       key: 'product',
       label: 'Shirt',
       question: 'Pick a shirt',
-      hint: 'Tap one, or drag it onto the shirt.',
+      hint: 'Both are 100% cotton. Prices are per piece.',
       items: () => products.map((p, i) => ({
         value: p,
-        plate: Shirt.draw({ shape: p.shape, color: ['#E4032B', '#1436B4', '#F8C81C'][i % 3] }),
+        plate: Shirt.draw({ shape: p.shape, color: (colorsFor(p).includes(draftColor()) ? draftColor() : colorsFor(p)[0]).hex, front: decoDraw(draft.front) }),
         name: p.shortName || p.name,
         price: 'from ' + peso(lowest(p)),
       })),
@@ -145,7 +145,7 @@
       key: 'color',
       label: 'Colour',
       question: 'Pick a colour',
-      hint: 'Turn the table for all eleven. Coloured shirts cost a little more than white.',
+      hint: 'Coloured shirts cost a little more than white.',
       items: () => colorsFor(draftProduct()).map(c => ({
         value: c,
         plate: Shirt.draw({ shape: draftProduct().shape, color: c.hex, front: decoDraw(draft.front) }),
@@ -161,8 +161,9 @@
       items: () => FRONT_OPTIONS.map(d => ({
         value: d,
         plate: Shirt.draw({ shape: draftProduct().shape, color: draftColor().hex, side: 'front', front: decoDraw(withArt(d, draft.front && draft.front.art)) }),
-        name: d.key === 'plain' ? 'Plain front' : d.place.name,
-        price: d.key === 'plain' ? '' : d.method.name,
+        group: d.key === 'plain' ? 'No print' : d.place.name,
+        name: d.key === 'plain' ? 'Plain front' : d.method.name,
+        price: '',
       })),
     },
     {
@@ -173,8 +174,9 @@
       items: () => BACK_OPTIONS.map(d => ({
         value: d,
         plate: Shirt.draw({ shape: draftProduct().shape, color: draftColor().hex, side: 'back', back: decoDraw(withArt(d, draft.back && draft.back.art)) }),
-        name: d.key === 'plain' ? 'Plain back' : d.place.name,
-        price: d.key === 'plain' ? '' : d.method.name,
+        group: d.key === 'plain' ? 'No print' : d.place.name,
+        name: d.key === 'plain' ? 'Plain back' : d.method.name,
+        price: '',
       })),
     },
     {
@@ -200,11 +202,9 @@
   // Elements
   // ---------------------------------------------------------------------------
   const el = {
-    tableSide: $('.table-side'),
-    disc: $('#disc'),
-    discWrap: $('#disc-wrap'),
+    options: $('#options'),
     sizeSheet: $('#size-sheet'),
-    dots: $('#dots'),
+    steps: $('#steps'),
     question: $('#step-question'),
     hint: $('#step-hint'),
     back: $('#step-back'),
@@ -213,7 +213,8 @@
     flipper: $('#flipper'),
     faceFront: $('#face-front'),
     faceBack: $('#face-back'),
-    flipBtn: $('#flip-btn'),
+    showFront: $('#show-front'),
+    showBack: $('#show-back'),
     stamp: $('#stamp'),
     stageNote: $('#stage-note'),
     draftBox: $('#slip-draft'),
@@ -227,7 +228,6 @@
     sumDown: $('#sum-down'),
     sumDownLabel: $('#sum-down-label'),
     fine: $('#slip-fine'),
-    barcode: $('#barcode'),
     send: $('#send-order'),
     clear: $('#clear-order'),
     nudge: $('#slip-nudge'),
@@ -297,78 +297,43 @@
   }
 
   // ---------------------------------------------------------------------------
-  // The turning table
+  // The choices for the current step: every option in view at once
   // ---------------------------------------------------------------------------
-  const SPACING = 24;   // degrees between plates
-  const LO = -60;       // the top of the visible arc (degrees)
-  const HI = 6;         // the bottom of the visible arc, just above the step card
-  let rot = 0;
   let items = [];
 
   function isMobile() { return window.matchMedia('(max-width: 900px)').matches; }
 
-  function rotLimits() {
-    const span = (items.length - 1) * SPACING;
-    if (span <= HI - LO) { const r = (LO + HI) / 2 - span / 2; return { min: r, max: r }; }
-    return { min: HI - span, max: LO };
-  }
-  function clampRot(r) {
-    const l = rotLimits();
-    return Math.max(l.min, Math.min(l.max, r));
-  }
-
-  function setRot(r) {
-    rot = clampRot(r);
-    el.disc.style.setProperty('--rot', rot + 'deg');
-    el.disc.querySelectorAll('.dish').forEach((d, i) => {
-      const a = i * SPACING + rot;
-      const off = a < LO - 2 || a > HI + 2;
-      d.classList.toggle('off', off && !isMobile());
-      d.tabIndex = off && !isMobile() ? -1 : 0;
-    });
-    const l = rotLimits();
-    $('#spin-up').disabled = rot >= l.max - 0.5;
-    $('#spin-down').disabled = rot <= l.min + 0.5;
-  }
-
-  function renderDisc(animate) {
+  function renderOptions() {
     const step = STEPS[stepIndex];
-    el.tableSide.classList.toggle('sheet-mode', !!step.sheet);
-    if (step.sheet) { renderSizeSheet(); return; }
+    el.options.hidden = !!step.sheet;
+    el.sizeSheet.hidden = !step.sheet;
+    if (step.sheet) { items = []; el.options.innerHTML = ''; renderSizeSheet(); return; }
     items = step.items();
-    const build = () => {
-      el.disc.innerHTML = '';
-      items.forEach((it, i) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'dish';
-        b.setAttribute('role', 'option');
-        b.style.setProperty('--a', i * SPACING + 'deg');
-        b.style.setProperty('--i', i);
-        b.setAttribute('aria-selected', sameValue(step.key, draft[step.key], it.value) ? 'true' : 'false');
-        b.innerHTML =
-          `<span class="dish-in"><span class="plate">${it.plate}</span>` +
-          `<span class="tag"><span class="tag-name">${esc(it.name)}</span>${it.price ? `<span class="tag-price">${esc(it.price)}</span>` : ''}</span></span>`;
-        b.addEventListener('click', e => onDishClick(e, b, it));
-        b.addEventListener('pointerdown', e => onDishPointerDown(e, b, it));
-        el.disc.appendChild(b);
-      });
-      const sel = items.findIndex(it => sameValue(step.key, draft[step.key], it.value));
-      setRot(sel > -1 ? (LO + HI) / 2 - sel * SPACING : LO);
-    };
-
-    if (animate && !reduceMotion) {
-      el.discWrap.classList.add('turning');
-      setTimeout(() => {
-        build();
-        el.discWrap.classList.remove('turning');
-        el.discWrap.classList.add('arriving');
-        void el.discWrap.offsetWidth;
-        el.discWrap.classList.remove('arriving');
-      }, 260);
-    } else {
-      build();
-    }
+    el.options.className = 'options options-' + step.key;
+    el.options.innerHTML = '';
+    let group = null;
+    items.forEach((it, i) => {
+      if (it.group && it.group !== group) {
+        group = it.group;
+        const h = document.createElement('p');
+        h.className = 'opt-group';
+        h.textContent = group;
+        el.options.appendChild(h);
+      }
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'opt';
+      b.setAttribute('role', 'option');
+      b.style.setProperty('--i', i);
+      b.setAttribute('aria-selected', sameValue(step.key, draft[step.key], it.value) ? 'true' : 'false');
+      b.innerHTML =
+        `<span class="opt-pic">${it.plate}</span>` +
+        `<span class="opt-text"><span class="opt-name">${esc(it.name)}</span>` +
+        `${it.price ? `<span class="opt-sub">${esc(it.price)}</span>` : ''}</span>`;
+      b.addEventListener('click', () => onOptClick(it));
+      b.addEventListener('pointerdown', e => onOptPointerDown(e, b, it));
+      el.options.appendChild(b);
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -423,20 +388,32 @@
   }
 
   // ---------------------------------------------------------------------------
-  // The step card
+  // The step tabs, the question and Back / Next
   // ---------------------------------------------------------------------------
+  function stepValue(key) {
+    if (key === 'product') return draft.product ? (draft.product.shortName || draft.product.name) : '';
+    if (key === 'color') return draft.color ? draft.color.name : '';
+    if (key === 'front' || key === 'back') {
+      const d = draft[key];
+      return d ? (d.key === 'plain' ? 'Plain' : d.method.name) : '';
+    }
+    const n = piecesOf(draft);
+    return n ? pcs(n) + ' pcs' : '';
+  }
+
   function renderStepCard() {
     const step = STEPS[stepIndex];
+    const showNotice = notice && stepIndex === 0;
     el.question.textContent = step.question;
-    el.hint.textContent = notice && stepIndex === 0 ? notice : step.hint;
-    el.dots.innerHTML = '';
-    STEPS.forEach((s, i) => {
-      const li = document.createElement('li');
-      li.className = (i === stepIndex ? 'now ' : '') + (isChosen(s.key) ? 'done' : '');
-      li.innerHTML = `<button type="button" aria-label="${s.label}${isChosen(s.key) ? ', chosen' : ''}"${i === stepIndex ? ' aria-current="step"' : ''}></button>`;
-      li.firstChild.addEventListener('click', () => goTo(i));
-      el.dots.appendChild(li);
-    });
+    el.hint.textContent = showNotice ? notice : step.hint;
+    el.hint.classList.toggle('notice', !!showNotice);
+    el.steps.innerHTML = STEPS.map((s, i) => {
+      const v = stepValue(s.key);
+      return `<li class="${i === stepIndex ? 'now' : ''}${isChosen(s.key) ? ' done' : ''}">` +
+        `<button type="button" data-i="${i}"${i === stepIndex ? ' aria-current="step"' : ''}>` +
+        `<span class="st-label">${s.label}</span><span class="st-val">${v ? esc(v) : '—'}</span></button></li>`;
+    }).join('');
+    el.steps.querySelectorAll('button').forEach(b => b.addEventListener('click', () => goTo(Number(b.dataset.i))));
     el.back.disabled = stepIndex === 0;
     if (step.sheet) {
       el.next.textContent = editingId ? 'Save changes' : 'Add to order';
@@ -444,39 +421,42 @@
       el.next.classList.add('btn-red');
       el.next.classList.remove('btn-ink');
     } else {
-      el.next.textContent = 'Next';
+      el.next.textContent = 'Next: ' + STEPS[stepIndex + 1].label;
       el.next.disabled = false;
       el.next.classList.add('btn-ink');
       el.next.classList.remove('btn-red');
     }
   }
 
-  function goTo(i) {
+  function goTo(i, scroll) {
     if (i < 0 || i >= STEPS.length) return;
-    const changed = i !== stepIndex;
     stepIndex = i;
     if (STEPS[i].key === 'back') flipped = true;
     if (STEPS[i].key === 'front' || STEPS[i].key === 'color') flipped = false;
     renderShirt(false);
     renderStepCard();
-    renderDisc(changed);
+    renderOptions();
+    // On phones the list can be long: bring the new question back into view
+    if (scroll && isMobile()) {
+      const top = document.querySelector('.picker').getBoundingClientRect().top;
+      if (top < 64) document.querySelector('.picker').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+    }
   }
 
   // ---------------------------------------------------------------------------
-  // Choosing: tap or drag a plate onto the shirt
+  // Choosing: tap an option (or, with a mouse, drag it onto the shirt)
   // ---------------------------------------------------------------------------
   let drag = null;
   let suppressClick = false;
 
-  function onDishClick(e, btn, it) {
+  function onOptClick(it) {
     if (suppressClick) { suppressClick = false; return; }
-    const at = stepIndex;
-    flyFrom(btn.querySelector('.plate'), () => choose(it.value, at));
+    choose(it.value, stepIndex);
   }
 
-  function onDishPointerDown(e, btn, it) {
+  function onOptPointerDown(e, btn, it) {
     if (e.button !== 0) return;
-    if (e.pointerType === 'touch') return; // phones: tap only, so the page can scroll
+    if (e.pointerType !== 'mouse') return; // touch and pen: tap only, so the page can scroll
     drag = { btn, it, at: stepIndex, x: e.clientX, y: e.clientY, active: false };
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp, { once: true });
@@ -485,19 +465,19 @@
   function onPointerMove(e) {
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!drag.active && Math.hypot(dx, dy) > 6) {
+    if (!drag.active && Math.hypot(dx, dy) > 8) {
       drag.active = true;
-      const plate = drag.btn.querySelector('.plate');
-      const r = plate.getBoundingClientRect();
-      el.ghost.innerHTML = plate.innerHTML;
+      const pic = drag.btn.querySelector('.opt-pic');
+      const r = pic.getBoundingClientRect();
+      el.ghost.innerHTML = pic.innerHTML;
       el.ghost.style.width = r.width + 'px';
       el.ghost.style.height = r.height + 'px';
-      el.ghost.classList.add('on', 'held');
+      el.ghost.classList.add('on');
       drag.btn.classList.add('lifted');
       document.body.classList.add('dragging');
     }
     if (drag.active) {
-      el.ghost.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%) rotate(-6deg)`;
+      el.ghost.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%) rotate(-4deg)`;
       el.drop.classList.toggle('hot', overDrop(e.clientX, e.clientY));
     }
   }
@@ -512,16 +492,9 @@
     setTimeout(() => { suppressClick = false; }, 50);
     document.body.classList.remove('dragging');
     d.btn.classList.remove('lifted');
-    el.ghost.classList.remove('held');
-    if (overDrop(e.clientX, e.clientY)) {
-      el.drop.classList.remove('hot');
-      landGhost(() => choose(d.it.value, d.at));
-    } else {
-      const r = d.btn.querySelector('.plate').getBoundingClientRect();
-      el.ghost.style.transition = 'transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s';
-      el.ghost.style.transform = `translate(${r.left + r.width / 2}px, ${r.top + r.height / 2}px) translate(-50%, -50%)`;
-      setTimeout(resetGhost, 300);
-    }
+    el.drop.classList.remove('hot');
+    resetGhost();
+    if (overDrop(e.clientX, e.clientY)) choose(d.it.value, d.at);
   }
 
   function overDrop(x, y) {
@@ -530,45 +503,14 @@
   }
 
   function resetGhost() {
-    el.ghost.classList.remove('on', 'held');
-    el.ghost.style.transition = '';
+    el.ghost.classList.remove('on');
     el.ghost.style.transform = '';
-    el.ghost.style.opacity = '';
     el.ghost.innerHTML = '';
   }
 
-  function dropCenter() {
-    const r = el.drop.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height * 0.42 };
-  }
-
-  function landGhost(done) {
-    if (reduceMotion) { resetGhost(); done(); return; }
-    const c = dropCenter();
-    el.ghost.style.transition = 'transform .38s cubic-bezier(.5,0,.3,1), opacity .38s';
-    el.ghost.style.transform = `translate(${c.x}px, ${c.y}px) translate(-50%, -50%) scale(.35)`;
-    el.ghost.style.opacity = '0';
-    setTimeout(() => { resetGhost(); done(); }, 380);
-  }
-
-  function flyFrom(plate, done) {
-    if (reduceMotion || !plate || isMobile() || document.hidden) { done(); return; }
-    const r = plate.getBoundingClientRect();
-    el.ghost.innerHTML = plate.innerHTML;
-    el.ghost.style.width = r.width + 'px';
-    el.ghost.style.height = r.height + 'px';
-    el.ghost.style.transition = 'none';
-    el.ghost.style.transform = `translate(${r.left + r.width / 2}px, ${r.top + r.height / 2}px) translate(-50%, -50%)`;
-    el.ghost.classList.add('on');
-    void el.ghost.offsetWidth;
-    landGhost(done);
-  }
-
   function choose(value, at) {
-    // The step changed while the plate was flying (e.g. Next was pressed)
     if (at != null && at !== stepIndex) return;
-    const from = stepIndex;
-    const step = STEPS[from];
+    const step = STEPS[stepIndex];
     if ((step.key === 'front' || step.key === 'back') && draft[step.key] && draft[step.key].art) {
       value = withArt(value, draft[step.key].art);
     }
@@ -581,10 +523,10 @@
 
     renderShirt(true);
     renderSlip(step.key);
-    el.disc.querySelectorAll('.dish').forEach((d, i) => d.setAttribute('aria-selected', sameValue(step.key, items[i].value, value) ? 'true' : 'false'));
     renderStepCard();
-    // Only move on once, even if the plate was double-clicked
-    setTimeout(() => { if (stepIndex === from) goTo(from + 1); }, reduceMotion ? 0 : 420);
+    // A new shirt changes the colours on offer; otherwise just move the tick
+    if (step.key === 'product') renderOptions();
+    else el.options.querySelectorAll('.opt').forEach((o, i) => o.setAttribute('aria-selected', sameValue(step.key, items[i].value, value) ? 'true' : 'false'));
   }
 
   // ---------------------------------------------------------------------------
@@ -614,7 +556,7 @@
     renderShirt(true);
     renderSlip();
     renderStepCard();
-    renderDisc(true);
+    renderOptions();
     pulseSend();
   }
 
@@ -683,9 +625,9 @@
     el.drop.parentElement.classList.toggle('on-dark', stageColor !== '#F8C81C');
 
     el.flipper.classList.toggle('flipped', flipped);
-    el.flipBtn.textContent = flipped ? 'See the front' : 'See the back';
+    el.showFront.setAttribute('aria-pressed', flipped ? 'false' : 'true');
+    el.showBack.setAttribute('aria-pressed', flipped ? 'true' : 'false');
     renderArtBar();
-    el.flipBtn.setAttribute('aria-pressed', flipped ? 'true' : 'false');
 
     const bits = [p.shortName || p.name];
     if (draft.color) bits.push(draft.color.name);
@@ -824,23 +766,7 @@
       : editingId ? 'Save and send this order'
       : order.length ? 'Add this item and send' : 'Add and send this order';
     el.clear.hidden = order.length === 0;
-    drawBarcode(order.map(it => it.id + designKey(it) + sizeLine(it)).join('|') + JSON.stringify(draft.sizes));
     saveSoon();
-  }
-
-  function drawBarcode(seed) {
-    let h = 2166136261;
-    for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
-    let x = 0, bars = '';
-    while (x < 200) {
-      h = Math.imul(h ^ (h >>> 13), 1274126177);
-      const w = 1 + (Math.abs(h) % 4);
-      const gap = 1 + (Math.abs(h >> 4) % 3);
-      if (x + w > 200) break;
-      bars += `<rect x="${x}" y="0" width="${w}" height="40"/>`;
-      x += w + gap;
-    }
-    el.barcode.innerHTML = bars;
   }
 
   function orderSummary() {
@@ -907,14 +833,14 @@
     renderShirt(true);
     renderSlip(side);
     renderStepCard();
-    if (STEPS[stepIndex].key === side) renderDisc(false);
+    if (STEPS[stepIndex].key === side) renderOptions();
   }
 
   function renderArtBar() {
     const side = visibleSide();
     const d = draft[side];
     const art = d && d.art;
-    $('#art-up-text').textContent = art ? `Replace the ${side} design` : `Add your design to the ${side}`;
+    $('#art-up-text').textContent = art ? `Replace the ${side} design` : `Upload a ${side} design`;
     $('#art-tools').hidden = !art;
     if (art) $('#art-size').value = Math.round(art.scale * 100);
     $('#art-hint').textContent = art
@@ -945,7 +871,7 @@
       d.art.scale = Number(e.target.value) / 100;
       moveArtElement(visibleSide());
     });
-    $('#art-size').addEventListener('change', () => { renderShirt(false); renderDisc(false); saveSoon(); });
+    $('#art-size').addEventListener('change', () => { renderShirt(false); renderOptions(); saveSoon(); });
     $('#art-remove').addEventListener('click', () => setArt(visibleSide(), null));
     $('#mockup-btn').addEventListener('click', downloadMockup);
 
@@ -1054,22 +980,10 @@
     el.back.addEventListener('click', () => goTo(stepIndex - 1));
     el.next.addEventListener('click', () => {
       if (STEPS[stepIndex].sheet) addToOrder();
-      else goTo(stepIndex + 1);
+      else goTo(stepIndex + 1, true);
     });
-    $('#spin-up').addEventListener('click', () => setRot(rot + SPACING));
-    $('#spin-down').addEventListener('click', () => setRot(rot - SPACING));
-    // Turn the table with the wheel or trackpad, in proportion to the scroll.
-    // At either end the page scrolls as normal.
-    el.discWrap.addEventListener('wheel', e => {
-      if (isMobile() || STEPS[stepIndex].sheet) return;
-      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : 1);
-      const to = clampRot(rot - dy * 0.12);
-      if (Math.abs(to - rot) < 0.01) return;
-      e.preventDefault();
-      setRot(to);
-    }, { passive: false });
-
-    el.flipBtn.addEventListener('click', () => { flipped = !flipped; renderShirt(false); });
+    el.showFront.addEventListener('click', () => { flipped = false; renderShirt(false); });
+    el.showBack.addEventListener('click', () => { flipped = true; renderShirt(false); });
     initArtwork();
     el.clear.addEventListener('click', clearOrder);
     el.send.addEventListener('click', () => {
@@ -1079,13 +993,12 @@
       document.getElementById('contact').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
       setTimeout(() => $('#f-name').focus({ preventScroll: true }), reduceMotion ? 0 : 600);
     });
-    window.addEventListener('resize', () => setRot(rot));
 
     if (restore()) notice = 'Welcome back. Your order is still on the slip.';
     renderShirt(false);
     renderSlip();
     renderStepCard();
-    renderDisc(false);
+    renderOptions();
   }
 
   // Lets other sections jump into the builder with choices made
